@@ -100,10 +100,10 @@ func (s *SchedulerServer) Start() error {
 	http.HandleFunc("/schedule", s.handleScheduleTask)
 	http.HandleFunc("/status", s.handleGetTaskStatus)
 	s.httpServer = &http.Server{
-		Addr: fmt.Sprintf(":%d", s.config.SchedulerServerPort),
+		Addr: fmt.Sprintf(":%d", s.config.ServerPort),
 	}
 
-	log.Printf("Scheduler server started on port %d", s.config.SchedulerServerPort)
+	log.Printf("Scheduler server started on port %d", s.config.ServerPort)
 
 	// start the server in a seperate goroutine
 	go func() {
