@@ -3,6 +3,7 @@ package database
 import (
 	"context"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -45,9 +46,12 @@ func (ds *DatabaseService) Connect(ctx context.Context) (*pgxpool.Pool, error) {
 	}
 
 	connectDeadline := time.Now().Add(15 * time.Second)
+	log.Println("Database connection attempt")
 	for {
 		err = db.Ping(ctx)
 		if err == nil {
+			log.Println("Successfully Pinged the database")
+			log.Println("Database connection successful")
 			return db, nil
 		}
 
@@ -72,7 +76,7 @@ func (ds *DatabaseService) withPgxConfig() (*pgxpool.Config, error) {
 	}
 
 	dbURL := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s", dbURLConfig.DBHost, dbURLConfig.DBPort, dbURLConfig.DBUser, dbURLConfig.DBPassword, dbURLConfig.DBName, dbURLConfig.SSLMode)
-	
+
 	dbConfig, err := pgxpool.ParseConfig(dbURL)
 	if err != nil {
 		return nil, fmt.Errorf("error parsing database URL: %v", err)

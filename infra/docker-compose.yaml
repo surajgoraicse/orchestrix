@@ -1,0 +1,28 @@
+services:
+    postgres:
+        container_name: postgres
+        image: postgres:18-alpine
+        environment:
+            POSTGRES_USER: ${DB_USER:?ERROR-DB_USER is not set}
+            POSTGRES_PASSWORD: ${DB_PASSWORD:?ERROR-DB_PASSWORD is not set}
+            POSTGRES_DB: ${DB_NAME:?ERROR-DB_NAME is not set}
+        ports:
+            - ${DB_PORT:?ERROR-DB_PORT is not set}:5432
+        volumes:
+            - ./data:/var/lib/postgresql
+        networks:
+            - orchestrix
+
+    # migrate:
+    #     container_name: go_migrate
+    #     image: migrate/migrate:v4.17.0
+    #     volumes:
+    #         - type: bind
+    #           source: ./internal/db/migrations
+    #           target: /migrations
+    #     depends_on:
+    #         - postgres
+
+networks:
+    orchestrix:
+        driver: bridge

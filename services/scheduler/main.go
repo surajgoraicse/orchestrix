@@ -96,7 +96,12 @@ func (s *SchedulerServer) getDbConfig() *database.DbConfig {
 
 func (s *SchedulerServer) Start() error {
 	dbConfig := s.getDbConfig()
-	database.NewDatabaseService(dbConfig)
+	db := database.NewDatabaseService(dbConfig)
+	var err error
+	s.dbPool, err = db.Connect(s.ctx)
+	if err != nil {
+		return err
+	}
 
 	http.HandleFunc("/schedule", s.handleScheduleTask)
 	http.HandleFunc("/status", s.handleGetTaskStatus)
@@ -130,15 +135,18 @@ func (s *SchedulerServer) gracefulShutdown() error {
 		defer cancel()
 
 		// shutdown the server
+		log.Println("Shutting down the server")
 		if err := s.httpServer.Shutdown(ctx); err != nil {
 			return err
 		}
 	}
 
 	if s.dbPool != nil {
+		log.Println("Closing the database connection")
 		s.dbPool.Close()
 	}
 
+	log.Println("Scheduler server stopped successfully")
 	return nil
 }
 
