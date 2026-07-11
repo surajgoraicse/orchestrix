@@ -17,12 +17,13 @@ services:
     #     container_name: go_migrate
     #     image: migrate/migrate:v4.17.0
     #     volumes:
-    #         - type: bind
-    #           source: ./internal/db/migrations
-    #           target: /migrations
+    #         - ../services/scheduler/db/migrations:/migrations
     #     depends_on:
     #         - postgres
+    #     networks:
+    #         - orchestrix
 
 networks:
     orchestrix:
+        name: orchestrix
         driver: bridge
