@@ -15,12 +15,13 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
+
 	"github.com/surajgoraicse/orchestrix/libs/go-libs/database"
 	"github.com/surajgoraicse/orchestrix/services/scheduler/internals/config"
 )
 
 func main() {
-	if err := godotenv.Load(); err != nil {
+	if err := godotenv.Load("./.env"); err != nil {
 		log.Fatalf("Failed to load environment variables: %v\n", err)
 	}
 	config := config.NewConfig()
