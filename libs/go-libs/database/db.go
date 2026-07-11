@@ -65,6 +65,7 @@ func (ds *DatabaseService) Connect(ctx context.Context) (*pgxpool.Pool, error) {
 			db.Close()
 			return nil, fmt.Errorf("context cancelled: %v", ctx.Err())
 		case <-time.After(500 * time.Millisecond):
+			log.Println("Failed to connect to database, retrying...")
 		}
 	}
 }

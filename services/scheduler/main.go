@@ -127,6 +127,7 @@ func (s *SchedulerServer) gracefulShutdown() error {
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
 	<-stop
+	fmt.Println("\n\n")
 	log.Println("OS signal received, shutting down gracefully...")
 
 	if s.httpServer != nil {
@@ -212,6 +213,7 @@ func (s *SchedulerServer) handleGetTaskStatus(w http.ResponseWriter, r *http.Req
 			http.Error(w, "Task not found", http.StatusNotFound)
 			return
 		}
+		log.Println("Failed to get task from database: ", err)
 		http.Error(w, "Failed to get task", http.StatusInternalServerError)
 		return
 	}
@@ -239,7 +241,16 @@ func (s *SchedulerServer) getTaskFromDB(ctx context.Context, taskID string) (Tas
 		SELECT id, task, scheduled_at, picked_at, started_at, completed_at, failed_at, error FROM tasks WHERE id = $1
 	`
 	var taskStatus TaskStatus
-	err := s.dbPool.QueryRow(ctx, sqlStatement, taskID).Scan(&taskStatus.ID, &taskStatus.Task, &taskStatus.ScheduledAt, &taskStatus.PickedAt, &taskStatus.StartedAt, &taskStatus.CompletedAt, &taskStatus.FailedAt, &taskStatus.Error)
+	err := s.dbPool.QueryRow(ctx, sqlStatement, taskID).Scan(
+		&taskStatus.ID,
+		&taskStatus.Task.Task,
+		&taskStatus.ScheduledAt,
+		&taskStatus.PickedAt,
+		&taskStatus.StartedAt,
+		&taskStatus.CompletedAt,
+		&taskStatus.FailedAt,
+		&taskStatus.Task.Error,
+	)
 	if err != nil {
 		return TaskStatus{}, err
 	}
