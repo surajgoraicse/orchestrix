@@ -35,8 +35,10 @@ db-reset: reset-db
 # migration 
 migrate-up:
 	@echo "Applying scheduler migrations..."
-	$(MIGRATE_CMD) -path=/migrations -database "$(DB_URL)" up
+	@$(MIGRATE_CMD) -path=/migrations -database "$(DB_URL)" up
+	@echo "Scheduler migrations applied successfully!"
 
 migrate-down:
 	@echo "Rolling back scheduler migrations..."
-	$(MIGRATE_CMD) -path=/migrations -database "$(DB_URL)" down 1
+	@$(MIGRATE_CMD) -path=/migrations -database "$(DB_URL)" down 1
+	@echo "Scheduler migrations rolled back successfully!"
