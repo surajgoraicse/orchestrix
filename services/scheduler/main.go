@@ -14,12 +14,20 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/joho/godotenv"
 	"github.com/surajgoraicse/orchestrix/libs/go-libs/database"
 	"github.com/surajgoraicse/orchestrix/services/scheduler/internals/config"
 )
 
 func main() {
-
+	if err := godotenv.Load(); err != nil {
+		log.Fatalf("Failed to load environment variables: %v\n", err)
+	}
+	config := config.NewConfig()
+	server := NewSchedulerServer(config)
+	if err := server.Start(); err != nil {
+		log.Fatalf("Failed to start scheduler server: %v\n", err)
+	}
 }
 
 // ScheduleTaskRequest represents the request structure for scheduling a task
@@ -59,9 +67,8 @@ type SchedulerServer struct {
 	config     *config.Config
 }
 
-func NewSchedulerServer() *SchedulerServer {
+func NewSchedulerServer(config *config.Config) *SchedulerServer {
 	ctx, cancel := context.WithCancel(context.Background())
-	config := config.NewConfig()
 	return &SchedulerServer{
 		ctx:    ctx,
 		config: config,

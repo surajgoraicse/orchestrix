@@ -12,7 +12,7 @@ type Config struct {
 	SSLMode    string
 
 	// server
-	SchedulerServerPort int
+	ServerPort int
 }
 
 func NewConfig() *Config {
@@ -26,6 +26,6 @@ func NewConfig() *Config {
 		SSLMode:    dotenv.GetEnv("SSL_MODE"),
 
 		// server
-		SchedulerServerPort: dotenv.GetEnvNumber("SCHEDULER_SERVER_PORT"),
+		ServerPort: dotenv.GetEnvNumber("SERVER_PORT"),
 	}
 }
