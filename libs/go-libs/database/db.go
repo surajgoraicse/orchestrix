@@ -45,7 +45,7 @@ func (ds *DatabaseService) Connect(ctx context.Context) (*pgxpool.Pool, error) {
 		return nil, fmt.Errorf("error connecting to database: %v", err)
 	}
 
-	connectDeadline := time.Now().Add(15 * time.Second)
+	connectDeadline := time.Now().Add(8 * time.Second)
 	log.Println("Database connection attempt")
 	for {
 		err = db.Ping(ctx)
@@ -64,7 +64,7 @@ func (ds *DatabaseService) Connect(ctx context.Context) (*pgxpool.Pool, error) {
 		case <-ctx.Done():
 			db.Close()
 			return nil, fmt.Errorf("context cancelled: %v", ctx.Err())
-		case <-time.After(500 * time.Millisecond):
+		case <-time.After(2000 * time.Millisecond):
 			log.Println("Failed to connect to database, retrying...")
 		}
 	}

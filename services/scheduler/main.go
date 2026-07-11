@@ -127,7 +127,8 @@ func (s *SchedulerServer) gracefulShutdown() error {
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
 	<-stop
-	fmt.Println("\n\n")
+	fmt.Println("")
+	fmt.Println("")
 	log.Println("OS signal received, shutting down gracefully...")
 
 	if s.httpServer != nil {
