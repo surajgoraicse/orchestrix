@@ -15,6 +15,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 	coordinatorv1 "github.com/surajgoraicse/orchestrix/api/gen/go/coordinator/v1"
 	workerv1 "github.com/surajgoraicse/orchestrix/api/gen/go/worker/v1"
@@ -280,9 +281,9 @@ func (c *CoordinatorServer) submitTaskToWorker(ctx context.Context, task *worker
 	return res, nil
 }
 
-func (s *CoordinatorServer) SendHeartbeat(ctx context.Context, req *coordinatorv1.SendHeartbeatRequest) (*coordinatorv1.SendHeartbeatResponse, error) {
-	s.WorkerPoolMutex.Lock()
-	defer s.WorkerPoolMutex.Unlock()
+func (c *CoordinatorServer) SendHeartbeat(ctx context.Context, req *coordinatorv1.SendHeartbeatRequest) (*coordinatorv1.SendHeartbeatResponse, error) {
+	c.WorkerPoolMutex.Lock()
+	defer c.WorkerPoolMutex.Unlock()
 
 	reqWorkerId := req.GetWorkerId()
 	reqWorkerUUID, err := uuid.Parse(reqWorkerId)
@@ -290,7 +291,7 @@ func (s *CoordinatorServer) SendHeartbeat(ctx context.Context, req *coordinatorv
 		return nil, fmt.Errorf("invalid worker id: %v", err)
 	}
 
-	for _, worker := range s.WorkerPool {
+	for _, worker := range c.WorkerPool {
 		if worker.id == reqWorkerUUID {
 			worker.lastHeartbeatAt = time.Now()
 			return &coordinatorv1.SendHeartbeatResponse{
@@ -306,7 +307,7 @@ func (s *CoordinatorServer) SendHeartbeat(ctx context.Context, req *coordinatorv
 		return nil, fmt.Errorf("failed to dial worker %s: %v", req.GetWorkerAddress(), err)
 	}
 
-	s.WorkerPool = append(s.WorkerPool, &WorkerNode{
+	c.WorkerPool = append(c.WorkerPool, &WorkerNode{
 		id:                  reqWorkerUUID,
 		address:             req.GetWorkerAddress(),
 		lastHeartbeatAt:     time.Now(),
@@ -319,7 +320,45 @@ func (s *CoordinatorServer) SendHeartbeat(ctx context.Context, req *coordinatorv
 	}, nil
 }
 
-func (s *CoordinatorServer) UpdateTaskStatus(ctx context.Context, req *coordinatorv1.UpdateTaskStatusRequest) (*coordinatorv1.UpdateTaskStatusResponse, error) {
+func (c *CoordinatorServer) UpdateTaskStatus(ctx context.Context, req *coordinatorv1.UpdateTaskStatusRequest) (*coordinatorv1.UpdateTaskStatusResponse, error) {
+	status := req.Status
+	taskID := req.TaskId
+	taskError := req.Error
+	var timeStamp pgtype.Timestamp
+
+	var column = ""
+
+	switch status {
+	case coordinatorv1.TaskStatus_TASK_STARTED:
+		column = "started_at"
+		timeStamp.Time = time.Unix(req.StartedAt, 0)
+		timeStamp.Valid = true
+
+	case coordinatorv1.TaskStatus_TASK_COMPLETED:
+		column = "completed_at"
+		timeStamp.Time = time.Unix(req.CompletedAt, 0)
+		timeStamp.Valid = true
+
+	case coordinatorv1.TaskStatus_TASK_FAILED:
+		column = "failed_at"
+		timeStamp.Time = time.Unix(req.FailedAt, 0)
+		timeStamp.Valid = true
+
+	default:
+		return &coordinatorv1.UpdateTaskStatusResponse{
+			Success: false,
+		}, fmt.Errorf("invalid task status: %v", status)
+	}
+	sqlStatement := fmt.Sprintf("UPDATE tasks SET %s = $1, error = $2 WHERE id = $3", column)
+	_, err := c.dbPool.Exec(ctx, sqlStatement, timeStamp, taskError, taskID)
+	if err != nil {
+		return &coordinatorv1.UpdateTaskStatusResponse{
+			Success: false,
+		}, err
+	}
+	return &coordinatorv1.UpdateTaskStatusResponse{
+		Success: true,
+	}, nil
 }
 
 // gracefulShutdown handles the graceful shutdown of the server

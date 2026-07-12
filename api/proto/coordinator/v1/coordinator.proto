@@ -5,10 +5,9 @@ package coordinator.v1;
 option go_package = "github.com/surajgoraicse/orchestrix/api/gen/go/coordinator/v1;coordinatorv1";
 
 enum TaskStatus {
-    TASK_QUEUED = 0;
-    TASK_STARTED = 1;
-    TASK_COMPLETED = 2;
-    TASK_FAILED = 3;
+    TASK_STARTED = 0;
+    TASK_COMPLETED = 1;
+    TASK_FAILED = 2;
 }
 
 service CoordinatorService {

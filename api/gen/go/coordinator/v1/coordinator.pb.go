@@ -24,25 +24,22 @@ const (
 type TaskStatus int32
 
 const (
-	TaskStatus_TASK_QUEUED    TaskStatus = 0
-	TaskStatus_TASK_STARTED   TaskStatus = 1
-	TaskStatus_TASK_COMPLETED TaskStatus = 2
-	TaskStatus_TASK_FAILED    TaskStatus = 3
+	TaskStatus_TASK_STARTED   TaskStatus = 0
+	TaskStatus_TASK_COMPLETED TaskStatus = 1
+	TaskStatus_TASK_FAILED    TaskStatus = 2
 )
 
 // Enum value maps for TaskStatus.
 var (
 	TaskStatus_name = map[int32]string{
-		0: "TASK_QUEUED",
-		1: "TASK_STARTED",
-		2: "TASK_COMPLETED",
-		3: "TASK_FAILED",
+		0: "TASK_STARTED",
+		1: "TASK_COMPLETED",
+		2: "TASK_FAILED",
 	}
 	TaskStatus_value = map[string]int32{
-		"TASK_QUEUED":    0,
-		"TASK_STARTED":   1,
-		"TASK_COMPLETED": 2,
-		"TASK_FAILED":    3,
+		"TASK_STARTED":   0,
+		"TASK_COMPLETED": 1,
+		"TASK_FAILED":    2,
 	}
 )
 
@@ -230,7 +227,7 @@ func (x *UpdateTaskStatusRequest) GetStatus() TaskStatus {
 	if x != nil {
 		return x.Status
 	}
-	return TaskStatus_TASK_QUEUED
+	return TaskStatus_TASK_STARTED
 }
 
 func (x *UpdateTaskStatusRequest) GetStartedAt() int64 {
@@ -325,13 +322,12 @@ const file_coordinator_proto_rawDesc = "" +
 	"\tfailed_at\x18\x05 \x01(\x03R\bfailedAt\x12\x14\n" +
 	"\x05error\x18\x06 \x01(\tR\x05error\"4\n" +
 	"\x18UpdateTaskStatusResponse\x12\x18\n" +
-	"\asuccess\x18\x01 \x01(\bR\asuccess*T\n" +
+	"\asuccess\x18\x01 \x01(\bR\asuccess*C\n" +
 	"\n" +
-	"TaskStatus\x12\x0f\n" +
-	"\vTASK_QUEUED\x10\x00\x12\x10\n" +
-	"\fTASK_STARTED\x10\x01\x12\x12\n" +
-	"\x0eTASK_COMPLETED\x10\x02\x12\x0f\n" +
-	"\vTASK_FAILED\x10\x032\xd9\x01\n" +
+	"TaskStatus\x12\x10\n" +
+	"\fTASK_STARTED\x10\x00\x12\x12\n" +
+	"\x0eTASK_COMPLETED\x10\x01\x12\x0f\n" +
+	"\vTASK_FAILED\x10\x022\xd9\x01\n" +
 	"\x12CoordinatorService\x12\\\n" +
 	"\rSendHeartbeat\x12$.coordinator.v1.SendHeartbeatRequest\x1a%.coordinator.v1.SendHeartbeatResponse\x12e\n" +
 	"\x10UpdateTaskStatus\x12'.coordinator.v1.UpdateTaskStatusRequest\x1a(.coordinator.v1.UpdateTaskStatusResponseBMZKgithub.com/surajgoraicse/orchestrix/api/gen/go/coordinator/v1;coordinatorv1b\x06proto3"
