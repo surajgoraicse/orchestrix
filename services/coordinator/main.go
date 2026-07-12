@@ -13,7 +13,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	coordinatorv1 "github.com/surajgoraicse/orchestrix/api/gen/go/coordinator/v1"
@@ -42,12 +41,12 @@ type CoordinatorServer struct {
 	coordinatorv1.UnimplementedCoordinatorServiceServer
 	listener           net.Listener
 	grpcServer         *grpc.Server
-	WorkerPool         map[uuid.UUID]*WorkerNode
+	WorkerPool         []*WorkerNode
 	WorkerPoolMutex    sync.RWMutex
 	dbScanInterval     time.Duration
 	maxHeartbeatMisses uint8
 	heartbeatInterval  time.Duration
-	roundRobinIndex    atomic.Int32
+	roundRobinIndex    atomic.Uint32
 	config             *config.Config
 	dbPool             *pgxpool.Pool
 	ctx                context.Context
@@ -59,12 +58,12 @@ func NewCoordinatorServer(config *config.Config) (*CoordinatorServer, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	return &CoordinatorServer{
 		config:             config,
-		WorkerPool:         make(map[uuid.UUID]*WorkerNode),
+		WorkerPool:         make([]*WorkerNode, 0),
 		WorkerPoolMutex:    sync.RWMutex{},
 		dbScanInterval:     config.DbScanInterval,
 		maxHeartbeatMisses: uint8(config.MaxHeartbeatMisses),
 		heartbeatInterval:  config.HeartbeatInterval,
-		roundRobinIndex:    atomic.Int32{},
+		roundRobinIndex:    atomic.Uint32{},
 		ctx:                ctx,
 		cancel:             cancel,
 		wg:                 sync.WaitGroup{},
@@ -228,15 +227,23 @@ func (c *CoordinatorServer) executeAllScheduledTasks(ctx context.Context) {
 
 // getNextWorker returns the next available worker
 // it uses round robin algorithm to select the next worker
-func (c *CoordinatorServer) getNextWorker() *WorkerNode {
-	return &WorkerNode{}
+func (c *CoordinatorServer) getNextWorker() (*WorkerNode, error) {
+	c.WorkerPoolMutex.RLock()
+	defer c.WorkerPoolMutex.RUnlock()
+	nosOfWorkers := len(c.WorkerPool)
+	if nosOfWorkers == 0 {
+		return nil, ErrNoAvailableWorkers
+	}
+	i := c.roundRobinIndex.Load() % uint32(nosOfWorkers)
+	c.roundRobinIndex.Add(1)
+	return c.WorkerPool[i], nil
 }
 
 // submitTaskToWorker submits a task to a worker
 func (c *CoordinatorServer) submitTaskToWorker(ctx context.Context, task *workerv1.SubmitTaskRequest) (*workerv1.SubmitTaskResponse, error) {
-	worker := c.getNextWorker()
-	if worker == nil {
-		return nil, ErrNoAvailableWorkers
+	worker, err := c.getNextWorker()
+	if err != nil {
+		return nil, err
 	}
 	res, err := worker.workerServiceClient.SubmitTask(ctx, task)
 	if err != nil {
