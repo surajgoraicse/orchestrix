@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"net"
@@ -13,6 +14,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	coordinatorv1 "github.com/surajgoraicse/orchestrix/api/gen/go/coordinator/v1"
 	workerv1 "github.com/surajgoraicse/orchestrix/api/gen/go/worker/v1"
@@ -122,6 +124,7 @@ func (c *CoordinatorServer) startGrpcServer() error {
 	return nil
 }
 
+// scanDatabase scans the database for scheduled tasks and executes them
 func (c *CoordinatorServer) scanDatabase() {
 	ticker := time.NewTicker(c.dbScanInterval)
 	c.wg.Add(1)
@@ -131,7 +134,15 @@ func (c *CoordinatorServer) scanDatabase() {
 		for {
 			select {
 			case <-ticker.C:
-				c.executeAllScheduledTasks()
+				func() {
+					// we could run this asynchronously in a seperate goroutine
+					// that would require locking the db rows to prevent duplicate execution
+					// for now we keep it synchronously with 10 seconds timeout
+					log.Println("scanning database for scheduled tasks")
+					ctx, cancel := context.WithTimeout(c.ctx, 10*time.Second)
+					defer cancel()
+					c.executeAllScheduledTasks(ctx)
+				}()
 			case <-c.ctx.Done():
 				return
 			}
@@ -139,7 +150,79 @@ func (c *CoordinatorServer) scanDatabase() {
 	}()
 }
 
-func (c *CoordinatorServer) executeAllScheduledTasks() {
+// executeAllScheduledTasks executes all scheduled tasks from the database
+func (c *CoordinatorServer) executeAllScheduledTasks(ctx context.Context) {
+	done := make(chan struct{})
+
+	go func() {
+		// perform the actual work that might get hung up
+		defer close(done)
+
+		tx, err := c.dbPool.Begin(ctx)
+		if err != nil {
+			log.Printf("failed to begin transaction: %v", err)
+			return
+		}
+		// rollback the transaction if it is not committed
+		defer func() {
+			err := tx.Rollback(ctx)
+			if errors.Is(err, pgx.ErrTxClosed) {
+				return
+			}
+			if err != nil {
+				log.Printf("failed to rollback transaction: %v", err)
+			}
+		}()
+
+		rows, err := tx.Query(ctx, `SELECT id, task FROM tasks WHERE scheduled_at < (NOW() + INTERVAL '30 seconds') AND picked_at IS NULL ORDER BY scheduled_at FOR UPDATE SKIP LOCKED`)
+		if err != nil {
+			log.Printf("Error executing query: %v\n", err)
+			return
+		}
+		defer rows.Close()
+
+		var tasks []*workerv1.SubmitTaskRequest
+		for rows.Next() {
+			var task workerv1.SubmitTaskRequest
+			if err := rows.Scan(&task.TaskId, &task.TaskPayload); err != nil {
+				log.Printf("Error scanning row: %v\n", err)
+				continue
+			}
+			tasks = append(tasks, &task)
+		}
+		if err = rows.Err(); err != nil {
+			log.Printf("Error scanning rows: %v\n", err)
+			return
+		}
+		for _, task := range tasks {
+			if err := c.submitTaskToWorker(ctx, task); err != nil {
+				log.Printf("Error submitting task: %v\n", err)
+				continue
+			}
+			if _, err := tx.Exec(ctx, `UPDATE tasks SET picked_at = NOW() WHERE id = $1`, task.TaskId); err != nil {
+				log.Printf("Error updating task status to picked_at: %v\n", err)
+				continue
+			}
+		}
+		if err := tx.Commit(ctx); err != nil {
+			log.Printf("Error committing transaction: %v\n", err)
+			return
+		}
+
+	}()
+
+	select {
+	case <-done:
+		// Completed successfully
+	case <-ctx.Done():
+		// Timed out or Parent context cancelled.
+		// Note: The goroutine above might still be leaked/running in the background
+		// until the process exit, but this function exits immediately.
+		log.Printf("executeAllScheduledTasks: task execution timed out or was cancelled")
+	}
+}
+
+func (c *CoordinatorServer) submitTaskToWorker(ctx context.Context, task *workerv1.SubmitTaskRequest) error {
 
 }
 
