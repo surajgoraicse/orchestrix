@@ -1,5 +1,5 @@
 
-.PHONY: docker-up docker-down build-scheduler run-scheduler
+.PHONY: docker-up docker-down build-scheduler run-scheduler protoc-coordinator
 
 docker-up:
 	docker compose -f infra/docker-compose.yaml up -d postgres 
@@ -8,6 +8,18 @@ docker-up:
 docker-down:
 	docker compose -f infra/docker-compose.yaml rm -fs postgres 
 
+
+
+# proto
+
+protoc-coordinator:
+	@echo "generating the coordinator proto ..."
+	@mkdir -p api/gen/go/coordinator/v1
+	@protoc \
+		-I api/proto/coordinator/v1 \
+		--go_out=api/gen/go/coordinator/v1 --go_opt=paths=source_relative \
+		--go-grpc_out=api/gen/go/coordinator/v1 --go-grpc_opt=paths=source_relative \
+		coordinator.proto
 
 
 # services

@@ -1,0 +1,39 @@
+syntax = "proto3";
+
+package coordinator.v1;
+
+option go_package = "github.com/surajgoraicse/orchestrix/api/gen/go/coordinator/v1;coordinatorv1";
+
+enum TaskStatus {
+    TASK_QUEUED = 0;
+    TASK_STARTED = 1;
+    TASK_COMPLETED = 2;
+    TASK_FAILED = 3;
+}
+
+service Coordinator {
+    rpc SendHeartBeat(SendHeartBeatRequest) returns (SendHeartBeatResponse);
+    rpc UpdateTaskStatus(UpdateTaskStatusRequest) returns (UpdateTaskStatusResponse);
+}
+
+message SendHeartBeatRequest {
+    string worker_id = 1;
+    string worker_address = 2;
+}
+
+message SendHeartBeatResponse {
+    string ack = 1;
+}
+
+message UpdateTaskStatusRequest {
+    string task_id = 1;
+    TaskStatus status = 2;
+    int64 started_at = 3;
+    int64 completed_at = 4;
+    int64 failed_at = 5;
+    string error = 6;
+}
+
+message UpdateTaskStatusResponse {
+    bool success = 1;
+}
