@@ -26,4 +26,4 @@ go.work
 env.bash
 
 # docker-compose volume
-data/
+pg_volume/

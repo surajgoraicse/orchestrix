@@ -9,7 +9,7 @@ services:
         ports:
             - ${DB_PORT:?ERROR-DB_PORT is not set}:5432
         volumes:
-            - ./data:/var/lib/postgresql
+            - ./pg_volume:/var/lib/postgresql
         networks:
             - orchestrix
 

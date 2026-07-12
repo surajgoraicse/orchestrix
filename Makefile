@@ -2,11 +2,11 @@
 .PHONY: docker-up docker-down build-scheduler run-scheduler
 
 docker-up:
-	docker compose -f ./infra/docker-compose.yaml --env-file .env.infra up -d postgres 
+	docker compose -f infra/docker-compose.yaml up -d postgres 
 
 
 docker-down:
-	docker compose -f ./infra/docker-compose.yaml --env-file .env.infra rm -fs postgres 
+	docker compose -f infra/docker-compose.yaml rm -fs postgres 
 
 
 
@@ -17,7 +17,7 @@ build-scheduler:
 
 run-scheduler:
 	$(MAKE) build-scheduler
-	docker compose -f ./infra/docker-compose.yaml --env-file .env.infra up scheduler
+	docker compose -f infra/docker-compose.yaml up scheduler
 
 stop-scheduler:
-	docker compose -f ./infra/docker-compose.yaml --env-file .env.infra rm -fs scheduler
+	docker compose -f infra/docker-compose.yaml rm -fs scheduler
