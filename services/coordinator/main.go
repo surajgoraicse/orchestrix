@@ -80,6 +80,7 @@ func (c *CoordinatorServer) getDBConfig() *database.DbConfig {
 	}
 }
 
+// Start starts the coordinator server
 func (c *CoordinatorServer) Start() error {
 	dbConfig := c.getDBConfig()
 	db := database.NewDatabaseService(dbConfig)
@@ -99,6 +100,8 @@ func (c *CoordinatorServer) Start() error {
 
 	return c.gracefulShutdown()
 }
+
+// startGrpcServer starts the gRPC server on the configured port
 func (c *CoordinatorServer) startGrpcServer() error {
 	var err error
 	c.listener, err = net.Listen("tcp", fmt.Sprintf(":%d", c.config.ServerPort))
@@ -129,6 +132,7 @@ func (s *CoordinatorServer) UpdateTaskStatus(ctx context.Context, req *coordinat
 	return &coordinatorv1.UpdateTaskStatusResponse{}, nil
 }
 
+// gracefulShutdown handles the graceful shutdown of the server
 func (c *CoordinatorServer) gracefulShutdown() error {
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
