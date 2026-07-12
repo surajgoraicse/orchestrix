@@ -23,6 +23,10 @@ import (
 	"google.golang.org/grpc"
 )
 
+var (
+	ErrNoAvailableWorkers = errors.New("no available workers")
+)
+
 func main() {
 
 }
@@ -222,8 +226,24 @@ func (c *CoordinatorServer) executeAllScheduledTasks(ctx context.Context) {
 	}
 }
 
-func (c *CoordinatorServer) submitTaskToWorker(ctx context.Context, task *workerv1.SubmitTaskRequest) error {
+// getNextWorker returns the next available worker
+// it uses round robin algorithm to select the next worker
+func (c *CoordinatorServer) getNextWorker() *WorkerNode {
+	return &WorkerNode{}
+}
 
+// submitTaskToWorker submits a task to a worker
+func (c *CoordinatorServer) submitTaskToWorker(ctx context.Context, task *workerv1.SubmitTaskRequest) (*workerv1.SubmitTaskResponse, error) {
+	worker := c.getNextWorker()
+	if worker == nil {
+		return nil, ErrNoAvailableWorkers
+	}
+	res, err := worker.workerServiceClient.SubmitTask(ctx, task)
+	if err != nil {
+		return nil, fmt.Errorf("failed to submit task to worker %s: %v", worker.address, err)
+	}
+	// log.Printf("Task %s submitted to worker %s with response %v", task.TaskId, worker.address, res)
+	return res, nil
 }
 
 func (s *CoordinatorServer) SendHeartbeat(ctx context.Context, req *coordinatorv1.SendHeartbeatRequest) (*coordinatorv1.SendHeartbeatResponse, error) {
