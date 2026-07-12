@@ -38,6 +38,7 @@ type CoordinatorServer struct {
 	grpcServer         *grpc.Server
 	WorkerPool         map[uuid.UUID]*WorkerNode
 	WorkerPoolMutex    sync.RWMutex
+	dbScanInterval     time.Duration
 	maxHeartbeatMisses uint8
 	heartbeatInterval  time.Duration
 	roundRobinIndex    atomic.Int32
@@ -54,6 +55,7 @@ func NewCoordinatorServer(config *config.Config) (*CoordinatorServer, error) {
 		config:             config,
 		WorkerPool:         make(map[uuid.UUID]*WorkerNode),
 		WorkerPoolMutex:    sync.RWMutex{},
+		dbScanInterval:     config.DbScanInterval,
 		maxHeartbeatMisses: uint8(config.MaxHeartbeatMisses),
 		heartbeatInterval:  config.HeartbeatInterval,
 		roundRobinIndex:    atomic.Int32{},
@@ -121,6 +123,23 @@ func (c *CoordinatorServer) startGrpcServer() error {
 }
 
 func (c *CoordinatorServer) scanDatabase() {
+	ticker := time.NewTicker(c.dbScanInterval)
+	c.wg.Add(1)
+	go func() {
+		defer c.wg.Done()
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ticker.C:
+				c.executeAllScheduledTasks()
+			case <-c.ctx.Done():
+				return
+			}
+		}
+	}()
+}
+
+func (c *CoordinatorServer) executeAllScheduledTasks() {
 
 }
 
@@ -139,7 +158,7 @@ func (c *CoordinatorServer) gracefulShutdown() error {
 	<-stop
 	log.Println("OS signal received, shutting down gracefully...")
 
-	// 1. Shutdown the gRPC server with a timeout of 10 seconds
+	// 1. Shutdown the gRPC server (stops incoming traffic)
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
@@ -165,18 +184,20 @@ func (c *CoordinatorServer) gracefulShutdown() error {
 		}
 	}()
 
-	// wait for the gRPC server to shutdown
 	shutdownWg.Wait()
 
-	// 2. Close the database connection
+	// 2. Cancel the main context (signals background loop to stop)
+	log.Println("Canceling main context")
+	c.cancel()
+
+	// 3. Wait for all background goroutines (like scanDatabase) to exit
+	log.Println("Waiting for background workers to finish")
+	c.wg.Wait()
+
+	// 4. Safely close database connection pool
 	log.Println("Closing database connection")
 	c.dbPool.Close()
 
-	// 3. Cancel the main context
-	c.cancel()
-
 	log.Println("Server shut down successfully")
-
 	return nil
-
 }

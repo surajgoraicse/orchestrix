@@ -17,6 +17,7 @@ type Config struct {
 
 	// coordinator server
 	ServerPort         int
+	DbScanInterval     time.Duration
 	HeartbeatInterval  time.Duration
 	MaxHeartbeatMisses int
 }
@@ -33,6 +34,7 @@ func NewConfig() *Config {
 
 		// server
 		ServerPort:         dotenv.GetEnvNumber("SERVER_PORT"),
+		DbScanInterval:     time.Duration(dotenv.GetEnvNumberOrDefault("DB_SCAN_INTERVAL", 10)) * time.Second,
 		HeartbeatInterval:  time.Duration(dotenv.GetEnvNumberOrDefault("HEARTBEAT_INTERVAL", 10)) * time.Second,
 		MaxHeartbeatMisses: dotenv.GetEnvNumberOrDefault("MAX_HEARTBEAT_MISSES", 3),
 	}
