@@ -13,6 +13,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	coordinatorv1 "github.com/surajgoraicse/orchestrix/api/gen/go/coordinator/v1"
@@ -20,6 +21,7 @@ import (
 	"github.com/surajgoraicse/orchestrix/libs/go-libs/database"
 	"github.com/surajgoraicse/orchestrix/services/coordinator/internals/config"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 var (
@@ -31,8 +33,9 @@ func main() {
 }
 
 type WorkerNode struct {
-	lastHeartbeatAt     *time.Time
-	address             *string
+	id                  uuid.UUID
+	lastHeartbeatAt     time.Time
+	address             string
 	grpcConnection      *grpc.ClientConn
 	workerServiceClient workerv1.WorkerServiceClient
 }
@@ -100,8 +103,8 @@ func (c *CoordinatorServer) Start() error {
 	if err != nil {
 		return fmt.Errorf("failed to start gRPC server: %v", err)
 	}
-
-	c.scanDatabase()
+	c.wg.Go(c.manageWorkerPool)
+	c.wg.Go(c.scanDatabase)
 
 	return c.gracefulShutdown()
 }
@@ -128,27 +131,27 @@ func (c *CoordinatorServer) startGrpcServer() error {
 // scanDatabase scans the database for scheduled tasks and executes them
 func (c *CoordinatorServer) scanDatabase() {
 	ticker := time.NewTicker(c.dbScanInterval)
-	c.wg.Add(1)
-	go func() {
-		defer c.wg.Done()
-		defer ticker.Stop()
-		for {
-			select {
-			case <-ticker.C:
-				func() {
-					// we could run this asynchronously in a seperate goroutine
-					// that would require locking the db rows to prevent duplicate execution
-					// for now we keep it synchronously with 10 seconds timeout
-					log.Println("scanning database for scheduled tasks")
-					ctx, cancel := context.WithTimeout(c.ctx, 10*time.Second)
-					defer cancel()
-					c.executeAllScheduledTasks(ctx)
-				}()
-			case <-c.ctx.Done():
-				return
+	c.wg.Go(
+		func() {
+			defer ticker.Stop()
+			for {
+				select {
+				case <-ticker.C:
+					func() {
+						// we could run this asynchronously in a seperate goroutine
+						// that would require locking the db rows to prevent duplicate execution
+						// for now we keep it synchronously with 10 seconds timeout
+						log.Println("scanning database for scheduled tasks")
+						ctx, cancel := context.WithTimeout(c.ctx, 10*time.Second)
+						defer cancel()
+						c.executeAllScheduledTasks(ctx)
+					}()
+				case <-c.ctx.Done():
+					return
+				}
 			}
-		}
-	}()
+		},
+	)
 }
 
 // executeAllScheduledTasks executes all scheduled tasks from the database
@@ -196,7 +199,7 @@ func (c *CoordinatorServer) executeAllScheduledTasks(ctx context.Context) {
 			return
 		}
 		for _, task := range tasks {
-			if err := c.submitTaskToWorker(ctx, task); err != nil {
+			if _, err := c.submitTaskToWorker(ctx, task); err != nil {
 				log.Printf("Error submitting task: %v\n", err)
 				continue
 			}
@@ -228,8 +231,8 @@ func (c *CoordinatorServer) removeInactiveWorkers() {
 	c.WorkerPoolMutex.Lock()
 	defer c.WorkerPoolMutex.Unlock()
 	for i, worker := range c.WorkerPool {
-		if time.Since(*worker.lastHeartbeatAt) > c.config.DeadWorkerTTL {
-			log.Printf("Removing inactive worker: %s", *worker.address)
+		if time.Since(worker.lastHeartbeatAt) > c.config.DeadWorkerTTL {
+			log.Printf("Removing inactive worker: %s", worker.address)
 			c.WorkerPool = append(c.WorkerPool[:i], c.WorkerPool[i+1:]...)
 		}
 	}
@@ -238,8 +241,6 @@ func (c *CoordinatorServer) removeInactiveWorkers() {
 // manageWorkerPool manages the worker pool
 // it removes inactive workers from the pool in a separate goroutine
 func (c *CoordinatorServer) manageWorkerPool() {
-	c.wg.Add(1)
-	defer c.wg.Done()
 	ticker := time.NewTicker(c.heartbeatInterval * 2)
 	defer ticker.Stop()
 	select {
@@ -280,11 +281,45 @@ func (c *CoordinatorServer) submitTaskToWorker(ctx context.Context, task *worker
 }
 
 func (s *CoordinatorServer) SendHeartbeat(ctx context.Context, req *coordinatorv1.SendHeartbeatRequest) (*coordinatorv1.SendHeartbeatResponse, error) {
-	return &coordinatorv1.SendHeartbeatResponse{}, nil
+	s.WorkerPoolMutex.Lock()
+	defer s.WorkerPoolMutex.Unlock()
+
+	reqWorkerId := req.GetWorkerId()
+	reqWorkerUUID, err := uuid.Parse(reqWorkerId)
+	if err != nil {
+		return nil, fmt.Errorf("invalid worker id: %v", err)
+	}
+
+	for _, worker := range s.WorkerPool {
+		if worker.id == reqWorkerUUID {
+			worker.lastHeartbeatAt = time.Now()
+			return &coordinatorv1.SendHeartbeatResponse{
+				Ack:     true,
+				Message: "successfully received heartbeat",
+			}, nil
+		}
+	}
+
+	log.Println("Registering a new worker ", req.GetWorkerAddress())
+	conn, err := grpc.NewClient(req.GetWorkerAddress(), grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		return nil, fmt.Errorf("failed to dial worker %s: %v", req.GetWorkerAddress(), err)
+	}
+
+	s.WorkerPool = append(s.WorkerPool, &WorkerNode{
+		id:                  reqWorkerUUID,
+		address:             req.GetWorkerAddress(),
+		lastHeartbeatAt:     time.Now(),
+		workerServiceClient: workerv1.NewWorkerServiceClient(conn),
+	})
+
+	return &coordinatorv1.SendHeartbeatResponse{
+		Ack:     true,
+		Message: "successfully registered worker",
+	}, nil
 }
 
 func (s *CoordinatorServer) UpdateTaskStatus(ctx context.Context, req *coordinatorv1.UpdateTaskStatusRequest) (*coordinatorv1.UpdateTaskStatusResponse, error) {
-	return &coordinatorv1.UpdateTaskStatusResponse{}, nil
 }
 
 // gracefulShutdown handles the graceful shutdown of the server

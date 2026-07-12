@@ -127,7 +127,8 @@ func (x *SendHeartbeatRequest) GetWorkerAddress() string {
 
 type SendHeartbeatResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Ack           string                 `protobuf:"bytes,1,opt,name=ack,proto3" json:"ack,omitempty"`
+	Ack           bool                   `protobuf:"varint,1,opt,name=ack,proto3" json:"ack,omitempty"`
+	Message       string                 `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -162,9 +163,16 @@ func (*SendHeartbeatResponse) Descriptor() ([]byte, []int) {
 	return file_coordinator_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *SendHeartbeatResponse) GetAck() string {
+func (x *SendHeartbeatResponse) GetAck() bool {
 	if x != nil {
 		return x.Ack
+	}
+	return false
+}
+
+func (x *SendHeartbeatResponse) GetMessage() string {
+	if x != nil {
+		return x.Message
 	}
 	return ""
 }
@@ -304,9 +312,10 @@ const file_coordinator_proto_rawDesc = "" +
 	"\x11coordinator.proto\x12\x0ecoordinator.v1\"Z\n" +
 	"\x14SendHeartbeatRequest\x12\x1b\n" +
 	"\tworker_id\x18\x01 \x01(\tR\bworkerId\x12%\n" +
-	"\x0eworker_address\x18\x02 \x01(\tR\rworkerAddress\")\n" +
+	"\x0eworker_address\x18\x02 \x01(\tR\rworkerAddress\"C\n" +
 	"\x15SendHeartbeatResponse\x12\x10\n" +
-	"\x03ack\x18\x01 \x01(\tR\x03ack\"\xdb\x01\n" +
+	"\x03ack\x18\x01 \x01(\bR\x03ack\x12\x18\n" +
+	"\amessage\x18\x02 \x01(\tR\amessage\"\xdb\x01\n" +
 	"\x17UpdateTaskStatusRequest\x12\x17\n" +
 	"\atask_id\x18\x01 \x01(\tR\x06taskId\x122\n" +
 	"\x06status\x18\x02 \x01(\x0e2\x1a.coordinator.v1.TaskStatusR\x06status\x12\x1d\n" +

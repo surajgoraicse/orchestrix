@@ -22,7 +22,8 @@ message SendHeartbeatRequest {
 }
 
 message SendHeartbeatResponse {
-    string ack = 1;
+    bool ack = 1;
+    string message = 2;
 }
 
 message UpdateTaskStatusRequest {
