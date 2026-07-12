@@ -31,42 +31,40 @@ func main() {
 }
 
 type WorkerNode struct {
-	heartbeatMisses     uint8
-	address             string
+	lastHeartbeatAt     *time.Time
+	address             *string
 	grpcConnection      *grpc.ClientConn
 	workerServiceClient workerv1.WorkerServiceClient
 }
 
 type CoordinatorServer struct {
 	coordinatorv1.UnimplementedCoordinatorServiceServer
-	listener           net.Listener
-	grpcServer         *grpc.Server
-	WorkerPool         []*WorkerNode
-	WorkerPoolMutex    sync.RWMutex
-	dbScanInterval     time.Duration
-	maxHeartbeatMisses uint8
-	heartbeatInterval  time.Duration
-	roundRobinIndex    atomic.Uint32
-	config             *config.Config
-	dbPool             *pgxpool.Pool
-	ctx                context.Context
-	cancel             context.CancelFunc
-	wg                 sync.WaitGroup
+	listener          net.Listener
+	grpcServer        *grpc.Server
+	WorkerPool        []*WorkerNode
+	WorkerPoolMutex   sync.RWMutex
+	dbScanInterval    time.Duration
+	heartbeatInterval time.Duration
+	roundRobinIndex   atomic.Uint32
+	config            *config.Config
+	dbPool            *pgxpool.Pool
+	ctx               context.Context
+	cancel            context.CancelFunc
+	wg                sync.WaitGroup
 }
 
 func NewCoordinatorServer(config *config.Config) (*CoordinatorServer, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	return &CoordinatorServer{
-		config:             config,
-		WorkerPool:         make([]*WorkerNode, 0),
-		WorkerPoolMutex:    sync.RWMutex{},
-		dbScanInterval:     config.DbScanInterval,
-		maxHeartbeatMisses: uint8(config.MaxHeartbeatMisses),
-		heartbeatInterval:  config.HeartbeatInterval,
-		roundRobinIndex:    atomic.Uint32{},
-		ctx:                ctx,
-		cancel:             cancel,
-		wg:                 sync.WaitGroup{},
+		config:            config,
+		WorkerPool:        make([]*WorkerNode, 0),
+		WorkerPoolMutex:   sync.RWMutex{},
+		dbScanInterval:    config.DbScanInterval,
+		heartbeatInterval: config.HeartbeatInterval,
+		roundRobinIndex:   atomic.Uint32{},
+		ctx:               ctx,
+		cancel:            cancel,
+		wg:                sync.WaitGroup{},
 	}, nil
 }
 
@@ -223,6 +221,34 @@ func (c *CoordinatorServer) executeAllScheduledTasks(ctx context.Context) {
 		// until the process exit, but this function exits immediately.
 		log.Printf("executeAllScheduledTasks: task execution timed out or was cancelled")
 	}
+}
+
+// removeInactiveWorkers removes inactive workers from the pool
+func (c *CoordinatorServer) removeInactiveWorkers() {
+	c.WorkerPoolMutex.Lock()
+	defer c.WorkerPoolMutex.Unlock()
+	for i, worker := range c.WorkerPool {
+		if time.Since(*worker.lastHeartbeatAt) > c.config.DeadWorkerTTL {
+			log.Printf("Removing inactive worker: %s", *worker.address)
+			c.WorkerPool = append(c.WorkerPool[:i], c.WorkerPool[i+1:]...)
+		}
+	}
+}
+
+// manageWorkerPool manages the worker pool
+// it removes inactive workers from the pool in a separate goroutine
+func (c *CoordinatorServer) manageWorkerPool() {
+	c.wg.Add(1)
+	defer c.wg.Done()
+	ticker := time.NewTicker(c.heartbeatInterval * 2)
+	defer ticker.Stop()
+	select {
+	case <-ticker.C:
+		c.removeInactiveWorkers()
+	case <-c.ctx.Done():
+		return
+	}
+
 }
 
 // getNextWorker returns the next available worker

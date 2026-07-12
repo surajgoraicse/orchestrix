@@ -16,10 +16,10 @@ type Config struct {
 	SSLMode    string
 
 	// coordinator server
-	ServerPort         int
-	DbScanInterval     time.Duration
-	HeartbeatInterval  time.Duration
-	MaxHeartbeatMisses int
+	ServerPort        int
+	DbScanInterval    time.Duration
+	HeartbeatInterval time.Duration
+	DeadWorkerTTL     time.Duration
 }
 
 func NewConfig() *Config {
@@ -33,9 +33,9 @@ func NewConfig() *Config {
 		SSLMode:    dotenv.GetEnv("SSL_MODE"),
 
 		// server
-		ServerPort:         dotenv.GetEnvNumber("SERVER_PORT"),
-		DbScanInterval:     time.Duration(dotenv.GetEnvNumberOrDefault("DB_SCAN_INTERVAL", 10)) * time.Second,
-		HeartbeatInterval:  time.Duration(dotenv.GetEnvNumberOrDefault("HEARTBEAT_INTERVAL", 10)) * time.Second,
-		MaxHeartbeatMisses: dotenv.GetEnvNumberOrDefault("MAX_HEARTBEAT_MISSES", 3),
+		ServerPort:        dotenv.GetEnvNumber("SERVER_PORT"),
+		DbScanInterval:    time.Duration(dotenv.GetEnvNumberOrDefault("DB_SCAN_INTERVAL", 10)) * time.Second,
+		HeartbeatInterval: time.Duration(dotenv.GetEnvNumberOrDefault("HEARTBEAT_INTERVAL", 10)) * time.Second,
+		DeadWorkerTTL:     time.Duration(dotenv.GetEnvNumberOrDefault("DEAD_WORKER_TTL", 20)) * time.Second,
 	}
 }
