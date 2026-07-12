@@ -7,6 +7,7 @@ replace github.com/surajgoraicse/orchestrix/api => ../../api
 replace github.com/surajgoraicse/orchestrix/libs/go-libs => ../../libs/go-libs
 
 require (
+	github.com/google/uuid v1.6.0
 	github.com/surajgoraicse/orchestrix/api v0.0.0-00010101000000-000000000000
 	github.com/surajgoraicse/orchestrix/libs/go-libs v0.0.0-00010101000000-000000000000
 	google.golang.org/grpc v1.82.0
