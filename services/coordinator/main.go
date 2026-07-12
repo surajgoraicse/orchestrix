@@ -3,9 +3,13 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
 	"net"
+	"os"
+	"os/signal"
 	"sync"
 	"sync/atomic"
+	"syscall"
 	"time"
 
 	"github.com/google/uuid"
@@ -52,6 +56,7 @@ func NewCoordinatorServer(config *config.Config) (*CoordinatorServer, error) {
 		WorkerPoolMutex:    sync.RWMutex{},
 		maxHeartbeatMisses: uint8(config.MaxHeartbeatMisses),
 		heartbeatInterval:  config.HeartbeatInterval,
+		roundRobinIndex:    atomic.Int32{},
 		ctx:                ctx,
 		cancel:             cancel,
 		wg:                 sync.WaitGroup{},
@@ -78,8 +83,42 @@ func (c *CoordinatorServer) getDBConfig() *database.DbConfig {
 func (c *CoordinatorServer) Start() error {
 	dbConfig := c.getDBConfig()
 	db := database.NewDatabaseService(dbConfig)
+	var err error
+	c.dbPool, err = db.Connect(c.ctx)
+	if err != nil {
+		return err
+	}
 
+	log.Println("starting the gRPC server on port ", c.config.ServerPort)
+	err = c.startGrpcServer()
+	if err != nil {
+		return fmt.Errorf("failed to start gRPC server: %v", err)
+	}
+
+	c.scanDatabase()
+
+	return c.gracefulShutdown()
+}
+func (c *CoordinatorServer) startGrpcServer() error {
+	var err error
+	c.listener, err = net.Listen("tcp", fmt.Sprintf(":%d", c.config.ServerPort))
+	if err != nil {
+		return err
+	}
+	c.grpcServer = grpc.NewServer()
+	coordinatorv1.RegisterCoordinatorServiceServer(c.grpcServer, c)
+
+	// start the gRPC server in a goroutine
+	go func() {
+		if err := c.grpcServer.Serve(c.listener); err != nil {
+			log.Fatalf("error starting the gRPC server %v", err)
+		}
+	}()
 	return nil
+}
+
+func (c *CoordinatorServer) scanDatabase() {
+
 }
 
 func (s *CoordinatorServer) SendHeartbeat(ctx context.Context, req *coordinatorv1.SendHeartbeatRequest) (*coordinatorv1.SendHeartbeatResponse, error) {
@@ -88,4 +127,52 @@ func (s *CoordinatorServer) SendHeartbeat(ctx context.Context, req *coordinatorv
 
 func (s *CoordinatorServer) UpdateTaskStatus(ctx context.Context, req *coordinatorv1.UpdateTaskStatusRequest) (*coordinatorv1.UpdateTaskStatusResponse, error) {
 	return &coordinatorv1.UpdateTaskStatusResponse{}, nil
+}
+
+func (c *CoordinatorServer) gracefulShutdown() error {
+	stop := make(chan os.Signal, 1)
+	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
+	<-stop
+	log.Println("OS signal received, shutting down gracefully...")
+
+	// 1. Shutdown the gRPC server with a timeout of 10 seconds
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	var shutdownWg sync.WaitGroup
+	shutdownWg.Add(1)
+
+	go func() {
+		defer shutdownWg.Done()
+		log.Println("Shutting down gRPC server")
+
+		done := make(chan struct{})
+		go func() {
+			c.grpcServer.GracefulStop()
+			close(done)
+		}()
+
+		select {
+		case <-done:
+			log.Println("gRPC server closed successfully")
+		case <-shutdownCtx.Done():
+			log.Println("gRPC graceful stop timed out, forcing stop")
+			c.grpcServer.Stop()
+		}
+	}()
+
+	// wait for the gRPC server to shutdown
+	shutdownWg.Wait()
+
+	// 2. Close the database connection
+	log.Println("Closing database connection")
+	c.dbPool.Close()
+
+	// 3. Cancel the main context
+	c.cancel()
+
+	log.Println("Server shut down successfully")
+
+	return nil
+
 }
