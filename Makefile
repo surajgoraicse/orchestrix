@@ -22,6 +22,18 @@ protoc-coordinator:
 		coordinator.proto
 	@echo "successfully generated proto for coordinator"
 
+# generate proto for worker
+protoc-worker:
+	@echo "generating proto for worker..."
+	@mkdir -p api/gen/go/worker/v1
+	@protoc \
+		-I api/proto/worker/v1 \
+		--go_out=api/gen/go/worker/v1 --go_opt=paths=source_relative \
+		--go-grpc_out=api/gen/go/worker/v1 --go-grpc_opt=paths=source_relative \
+		worker.proto
+	@echo "successfully generated proto for worker"
+
+
 # services
 build-scheduler:
 	@echo "building the scheduler"

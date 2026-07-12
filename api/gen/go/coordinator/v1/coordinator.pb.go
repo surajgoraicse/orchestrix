@@ -322,8 +322,8 @@ const file_coordinator_proto_rawDesc = "" +
 	"\vTASK_QUEUED\x10\x00\x12\x10\n" +
 	"\fTASK_STARTED\x10\x01\x12\x12\n" +
 	"\x0eTASK_COMPLETED\x10\x02\x12\x0f\n" +
-	"\vTASK_FAILED\x10\x032\xd2\x01\n" +
-	"\vCoordinator\x12\\\n" +
+	"\vTASK_FAILED\x10\x032\xd9\x01\n" +
+	"\x12CoordinatorService\x12\\\n" +
 	"\rSendHeartbeat\x12$.coordinator.v1.SendHeartbeatRequest\x1a%.coordinator.v1.SendHeartbeatResponse\x12e\n" +
 	"\x10UpdateTaskStatus\x12'.coordinator.v1.UpdateTaskStatusRequest\x1a(.coordinator.v1.UpdateTaskStatusResponseBMZKgithub.com/surajgoraicse/orchestrix/api/gen/go/coordinator/v1;coordinatorv1b\x06proto3"
 
@@ -350,10 +350,10 @@ var file_coordinator_proto_goTypes = []any{
 }
 var file_coordinator_proto_depIdxs = []int32{
 	0, // 0: coordinator.v1.UpdateTaskStatusRequest.status:type_name -> coordinator.v1.TaskStatus
-	1, // 1: coordinator.v1.Coordinator.SendHeartbeat:input_type -> coordinator.v1.SendHeartbeatRequest
-	3, // 2: coordinator.v1.Coordinator.UpdateTaskStatus:input_type -> coordinator.v1.UpdateTaskStatusRequest
-	2, // 3: coordinator.v1.Coordinator.SendHeartbeat:output_type -> coordinator.v1.SendHeartbeatResponse
-	4, // 4: coordinator.v1.Coordinator.UpdateTaskStatus:output_type -> coordinator.v1.UpdateTaskStatusResponse
+	1, // 1: coordinator.v1.CoordinatorService.SendHeartbeat:input_type -> coordinator.v1.SendHeartbeatRequest
+	3, // 2: coordinator.v1.CoordinatorService.UpdateTaskStatus:input_type -> coordinator.v1.UpdateTaskStatusRequest
+	2, // 3: coordinator.v1.CoordinatorService.SendHeartbeat:output_type -> coordinator.v1.SendHeartbeatResponse
+	4, // 4: coordinator.v1.CoordinatorService.UpdateTaskStatus:output_type -> coordinator.v1.UpdateTaskStatusResponse
 	3, // [3:5] is the sub-list for method output_type
 	1, // [1:3] is the sub-list for method input_type
 	1, // [1:1] is the sub-list for extension type_name

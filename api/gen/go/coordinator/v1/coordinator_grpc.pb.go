@@ -19,139 +19,139 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	Coordinator_SendHeartbeat_FullMethodName    = "/coordinator.v1.Coordinator/SendHeartbeat"
-	Coordinator_UpdateTaskStatus_FullMethodName = "/coordinator.v1.Coordinator/UpdateTaskStatus"
+	CoordinatorService_SendHeartbeat_FullMethodName    = "/coordinator.v1.CoordinatorService/SendHeartbeat"
+	CoordinatorService_UpdateTaskStatus_FullMethodName = "/coordinator.v1.CoordinatorService/UpdateTaskStatus"
 )
 
-// CoordinatorClient is the client API for Coordinator service.
+// CoordinatorServiceClient is the client API for CoordinatorService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-type CoordinatorClient interface {
+type CoordinatorServiceClient interface {
 	SendHeartbeat(ctx context.Context, in *SendHeartbeatRequest, opts ...grpc.CallOption) (*SendHeartbeatResponse, error)
 	UpdateTaskStatus(ctx context.Context, in *UpdateTaskStatusRequest, opts ...grpc.CallOption) (*UpdateTaskStatusResponse, error)
 }
 
-type coordinatorClient struct {
+type coordinatorServiceClient struct {
 	cc grpc.ClientConnInterface
 }
 
-func NewCoordinatorClient(cc grpc.ClientConnInterface) CoordinatorClient {
-	return &coordinatorClient{cc}
+func NewCoordinatorServiceClient(cc grpc.ClientConnInterface) CoordinatorServiceClient {
+	return &coordinatorServiceClient{cc}
 }
 
-func (c *coordinatorClient) SendHeartbeat(ctx context.Context, in *SendHeartbeatRequest, opts ...grpc.CallOption) (*SendHeartbeatResponse, error) {
+func (c *coordinatorServiceClient) SendHeartbeat(ctx context.Context, in *SendHeartbeatRequest, opts ...grpc.CallOption) (*SendHeartbeatResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(SendHeartbeatResponse)
-	err := c.cc.Invoke(ctx, Coordinator_SendHeartbeat_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, CoordinatorService_SendHeartbeat_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *coordinatorClient) UpdateTaskStatus(ctx context.Context, in *UpdateTaskStatusRequest, opts ...grpc.CallOption) (*UpdateTaskStatusResponse, error) {
+func (c *coordinatorServiceClient) UpdateTaskStatus(ctx context.Context, in *UpdateTaskStatusRequest, opts ...grpc.CallOption) (*UpdateTaskStatusResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(UpdateTaskStatusResponse)
-	err := c.cc.Invoke(ctx, Coordinator_UpdateTaskStatus_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, CoordinatorService_UpdateTaskStatus_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-// CoordinatorServer is the server API for Coordinator service.
-// All implementations must embed UnimplementedCoordinatorServer
+// CoordinatorServiceServer is the server API for CoordinatorService service.
+// All implementations must embed UnimplementedCoordinatorServiceServer
 // for forward compatibility.
-type CoordinatorServer interface {
+type CoordinatorServiceServer interface {
 	SendHeartbeat(context.Context, *SendHeartbeatRequest) (*SendHeartbeatResponse, error)
 	UpdateTaskStatus(context.Context, *UpdateTaskStatusRequest) (*UpdateTaskStatusResponse, error)
-	mustEmbedUnimplementedCoordinatorServer()
+	mustEmbedUnimplementedCoordinatorServiceServer()
 }
 
-// UnimplementedCoordinatorServer must be embedded to have
+// UnimplementedCoordinatorServiceServer must be embedded to have
 // forward compatible implementations.
 //
 // NOTE: this should be embedded by value instead of pointer to avoid a nil
 // pointer dereference when methods are called.
-type UnimplementedCoordinatorServer struct{}
+type UnimplementedCoordinatorServiceServer struct{}
 
-func (UnimplementedCoordinatorServer) SendHeartbeat(context.Context, *SendHeartbeatRequest) (*SendHeartbeatResponse, error) {
+func (UnimplementedCoordinatorServiceServer) SendHeartbeat(context.Context, *SendHeartbeatRequest) (*SendHeartbeatResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method SendHeartbeat not implemented")
 }
-func (UnimplementedCoordinatorServer) UpdateTaskStatus(context.Context, *UpdateTaskStatusRequest) (*UpdateTaskStatusResponse, error) {
+func (UnimplementedCoordinatorServiceServer) UpdateTaskStatus(context.Context, *UpdateTaskStatusRequest) (*UpdateTaskStatusResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method UpdateTaskStatus not implemented")
 }
-func (UnimplementedCoordinatorServer) mustEmbedUnimplementedCoordinatorServer() {}
-func (UnimplementedCoordinatorServer) testEmbeddedByValue()                     {}
+func (UnimplementedCoordinatorServiceServer) mustEmbedUnimplementedCoordinatorServiceServer() {}
+func (UnimplementedCoordinatorServiceServer) testEmbeddedByValue()                            {}
 
-// UnsafeCoordinatorServer may be embedded to opt out of forward compatibility for this service.
-// Use of this interface is not recommended, as added methods to CoordinatorServer will
+// UnsafeCoordinatorServiceServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to CoordinatorServiceServer will
 // result in compilation errors.
-type UnsafeCoordinatorServer interface {
-	mustEmbedUnimplementedCoordinatorServer()
+type UnsafeCoordinatorServiceServer interface {
+	mustEmbedUnimplementedCoordinatorServiceServer()
 }
 
-func RegisterCoordinatorServer(s grpc.ServiceRegistrar, srv CoordinatorServer) {
-	// If the following call panics, it indicates UnimplementedCoordinatorServer was
+func RegisterCoordinatorServiceServer(s grpc.ServiceRegistrar, srv CoordinatorServiceServer) {
+	// If the following call panics, it indicates UnimplementedCoordinatorServiceServer was
 	// embedded by pointer and is nil.  This will cause panics if an
 	// unimplemented method is ever invoked, so we test this at initialization
 	// time to prevent it from happening at runtime later due to I/O.
 	if t, ok := srv.(interface{ testEmbeddedByValue() }); ok {
 		t.testEmbeddedByValue()
 	}
-	s.RegisterService(&Coordinator_ServiceDesc, srv)
+	s.RegisterService(&CoordinatorService_ServiceDesc, srv)
 }
 
-func _Coordinator_SendHeartbeat_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _CoordinatorService_SendHeartbeat_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(SendHeartbeatRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(CoordinatorServer).SendHeartbeat(ctx, in)
+		return srv.(CoordinatorServiceServer).SendHeartbeat(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Coordinator_SendHeartbeat_FullMethodName,
+		FullMethod: CoordinatorService_SendHeartbeat_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(CoordinatorServer).SendHeartbeat(ctx, req.(*SendHeartbeatRequest))
+		return srv.(CoordinatorServiceServer).SendHeartbeat(ctx, req.(*SendHeartbeatRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Coordinator_UpdateTaskStatus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _CoordinatorService_UpdateTaskStatus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(UpdateTaskStatusRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(CoordinatorServer).UpdateTaskStatus(ctx, in)
+		return srv.(CoordinatorServiceServer).UpdateTaskStatus(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Coordinator_UpdateTaskStatus_FullMethodName,
+		FullMethod: CoordinatorService_UpdateTaskStatus_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(CoordinatorServer).UpdateTaskStatus(ctx, req.(*UpdateTaskStatusRequest))
+		return srv.(CoordinatorServiceServer).UpdateTaskStatus(ctx, req.(*UpdateTaskStatusRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-// Coordinator_ServiceDesc is the grpc.ServiceDesc for Coordinator service.
+// CoordinatorService_ServiceDesc is the grpc.ServiceDesc for CoordinatorService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
-var Coordinator_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "coordinator.v1.Coordinator",
-	HandlerType: (*CoordinatorServer)(nil),
+var CoordinatorService_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "coordinator.v1.CoordinatorService",
+	HandlerType: (*CoordinatorServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
 			MethodName: "SendHeartbeat",
-			Handler:    _Coordinator_SendHeartbeat_Handler,
+			Handler:    _CoordinatorService_SendHeartbeat_Handler,
 		},
 		{
 			MethodName: "UpdateTaskStatus",
-			Handler:    _Coordinator_UpdateTaskStatus_Handler,
+			Handler:    _CoordinatorService_UpdateTaskStatus_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

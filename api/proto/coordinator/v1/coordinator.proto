@@ -11,7 +11,7 @@ enum TaskStatus {
     TASK_FAILED = 3;
 }
 
-service Coordinator {
+service CoordinatorService {
     rpc SendHeartbeat(SendHeartbeatRequest) returns (SendHeartbeatResponse);
     rpc UpdateTaskStatus(UpdateTaskStatusRequest) returns (UpdateTaskStatusResponse);
 }
