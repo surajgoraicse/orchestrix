@@ -1,0 +1,9 @@
+go 1.26.4
+
+use (
+	./api
+	./libs/go-libs
+	./services/coordinator
+	./services/scheduler
+	./services/worker
+)

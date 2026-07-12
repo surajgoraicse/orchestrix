@@ -12,16 +12,16 @@ enum TaskStatus {
 }
 
 service Coordinator {
-    rpc SendHeartBeat(SendHeartBeatRequest) returns (SendHeartBeatResponse);
+    rpc SendHeartbeat(SendHeartbeatRequest) returns (SendHeartbeatResponse);
     rpc UpdateTaskStatus(UpdateTaskStatusRequest) returns (UpdateTaskStatusResponse);
 }
 
-message SendHeartBeatRequest {
+message SendHeartbeatRequest {
     string worker_id = 1;
     string worker_address = 2;
 }
 
-message SendHeartBeatResponse {
+message SendHeartbeatResponse {
     string ack = 1;
 }
 

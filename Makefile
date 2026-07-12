@@ -13,14 +13,14 @@ docker-down:
 # proto
 
 protoc-coordinator:
-	@echo "generating the coordinator proto ..."
+	@echo "generating proto for coordinator..."
 	@mkdir -p api/gen/go/coordinator/v1
 	@protoc \
 		-I api/proto/coordinator/v1 \
 		--go_out=api/gen/go/coordinator/v1 --go_opt=paths=source_relative \
 		--go-grpc_out=api/gen/go/coordinator/v1 --go-grpc_opt=paths=source_relative \
 		coordinator.proto
-
+	@echo "successfully generated proto for coordinator"
 
 # services
 build-scheduler:
