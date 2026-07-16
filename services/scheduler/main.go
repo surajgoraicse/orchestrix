@@ -182,7 +182,7 @@ func (s *SchedulerServer) handleScheduleTask(w http.ResponseWriter, r *http.Requ
 		ScheduledAt: &unixTimestamp,
 	})
 	if err != nil {
-		http.Error(w, "Failed to insert task into database", http.StatusInternalServerError)
+		http.Error(w, "Failed to insert task into database : "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -227,7 +227,7 @@ func (s *SchedulerServer) handleGetTaskStatus(w http.ResponseWriter, r *http.Req
 
 func (s *SchedulerServer) insertTaskIntoDb(ctx context.Context, task Task) (string, error) {
 	sqlStatement := `
-		INSERT INTO tasks (task, scheduled_at) VALUES ($1, $2) RETURNING id
+		INSERT INTO scheduler.tasks (task, scheduled_at) VALUES ($1, $2) RETURNING id
 	`
 	var taskID string
 	err := s.dbPool.QueryRow(ctx, sqlStatement, task.Task, task.ScheduledAt).Scan(&taskID)

@@ -17,6 +17,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
+	_ "github.com/joho/godotenv/autoload"
 	coordinatorv1 "github.com/surajgoraicse/orchestrix/api/gen/go/coordinator/v1"
 	workerv1 "github.com/surajgoraicse/orchestrix/api/gen/go/worker/v1"
 	"github.com/surajgoraicse/orchestrix/libs/go-libs/database"
@@ -30,7 +31,14 @@ var (
 )
 
 func main() {
-
+	config := config.NewConfig()
+	coordinatorServer, err := NewCoordinatorServer(config)
+	if err != nil {
+		log.Fatalf("failed to create coordinator server: %v", err)
+	}
+	if err := coordinatorServer.Start(); err != nil {
+		log.Fatalf("failed to start coordinator server: %v", err)
+	}
 }
 
 type WorkerNode struct {
@@ -179,7 +187,7 @@ func (c *CoordinatorServer) executeAllScheduledTasks(ctx context.Context) {
 			}
 		}()
 
-		rows, err := tx.Query(ctx, `SELECT id, task FROM tasks WHERE scheduled_at < (NOW() + INTERVAL '30 seconds') AND picked_at IS NULL ORDER BY scheduled_at FOR UPDATE SKIP LOCKED`)
+		rows, err := tx.Query(ctx, `SELECT id, task FROM scheduler.tasks WHERE scheduled_at < (NOW() + INTERVAL '30 seconds') AND picked_at IS NULL ORDER BY scheduled_at FOR UPDATE SKIP LOCKED`)
 		if err != nil {
 			log.Printf("Error executing query: %v\n", err)
 			return
@@ -204,7 +212,7 @@ func (c *CoordinatorServer) executeAllScheduledTasks(ctx context.Context) {
 				log.Printf("Error submitting task: %v\n", err)
 				continue
 			}
-			if _, err := tx.Exec(ctx, `UPDATE tasks SET picked_at = NOW() WHERE id = $1`, task.TaskId); err != nil {
+			if _, err := tx.Exec(ctx, `UPDATE scheduler.tasks SET picked_at = NOW() WHERE id = $1`, task.TaskId); err != nil {
 				log.Printf("Error updating task status to picked_at: %v\n", err)
 				continue
 			}
@@ -349,7 +357,7 @@ func (c *CoordinatorServer) UpdateTaskStatus(ctx context.Context, req *coordinat
 			Success: false,
 		}, fmt.Errorf("invalid task status: %v", status)
 	}
-	sqlStatement := fmt.Sprintf("UPDATE tasks SET %s = $1, error = $2 WHERE id = $3", column)
+	sqlStatement := fmt.Sprintf("UPDATE scheduler.tasks SET %s = $1, error = $2 WHERE id = $3", column)
 	_, err := c.dbPool.Exec(ctx, sqlStatement, timeStamp, taskError, taskID)
 	if err != nil {
 		return &coordinatorv1.UpdateTaskStatusResponse{

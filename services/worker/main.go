@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	_ "github.com/joho/godotenv/autoload"
 	coordinatorv1 "github.com/surajgoraicse/orchestrix/api/gen/go/coordinator/v1"
 	workerv1 "github.com/surajgoraicse/orchestrix/api/gen/go/worker/v1"
 	"github.com/surajgoraicse/orchestrix/services/worker/internals/config"
@@ -26,7 +27,7 @@ type Task struct {
 
 type WorkerServer struct {
 	workerv1.UnimplementedWorkerServiceServer
-	id                      uint32
+	id                      string
 	serverPort              string
 	coordinatorAddress      string
 	listener                net.Listener
@@ -42,8 +43,10 @@ type WorkerServer struct {
 
 func NewWorkerServer(config *config.Config) *WorkerServer {
 	ctx, cancel := context.WithCancel(context.Background())
+	workerId, _ := uuid.NewUUID()
+
 	return &WorkerServer{
-		id:                 uuid.New().ID(),
+		id:                 workerId.String(),
 		taskQueue:          make(chan *Task, 100),
 		coordinatorAddress: config.CoordinatorAddress,
 		heartbeatInterval:  config.HeartbeatInterval,
@@ -87,8 +90,8 @@ func (w *WorkerServer) startGRPCServer() error {
 	if err != nil {
 		return err
 	}
-	w.serverPort = fmt.Sprintf(":%d", w.listener.Addr().(*net.TCPAddr).Port)
 	w.listener = listener
+	w.serverPort = fmt.Sprintf(":%d", w.listener.Addr().(*net.TCPAddr).Port)
 	w.grpcServer = grpc.NewServer()
 	workerv1.RegisterWorkerServiceServer(w.grpcServer, w)
 	go func() {
@@ -119,7 +122,7 @@ func (w *WorkerServer) sendHeartbeat() {
 }
 func (w *WorkerServer) sendHeartbeatToCoordinator() error {
 	_, err := w.coordinatorServerClient.SendHeartbeat(w.ctx, &coordinatorv1.SendHeartbeatRequest{
-		WorkerId:      fmt.Sprintf("%d", w.id),
+		WorkerId:      w.id,
 		WorkerAddress: w.serverPort,
 	})
 	if err != nil {
@@ -200,5 +203,9 @@ func (w *WorkerServer) SubmitTask(ctx context.Context, req *workerv1.SubmitTaskR
 }
 
 func main() {
-
+	config := config.NewConfig()
+	worker := NewWorkerServer(config)
+	if err := worker.Start(); err != nil {
+		log.Fatalln("Error starting worker:", err)
+	}
 }
