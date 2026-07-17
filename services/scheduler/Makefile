@@ -5,9 +5,9 @@ include .env
 DOCKER_POSTGRES_SERVICE_NAME=postgres
 DB_URL := postgres://$(DB_USER):$(DB_PASSWORD)@$(DOCKER_POSTGRES_SERVICE_NAME):$(DB_PORT)/$(DB_NAME)?sslmode=$(SSL_MODE)
 
-# We mount our local db/migrations folder.
+# We mount our local internal/db/migrations folder.
 # We attach to the 'orchestrix' network so we can resolve the 'shared_postgres' container by name.
-MIGRATE_CMD := docker run --rm -v $(shell pwd)/db/migrations:/migrations --network orchestrix migrate/migrate:v4.19.0
+MIGRATE_CMD := docker run --rm -v $(shell pwd)/internal/db/migrations:/migrations --network orchestrix migrate/migrate:v4.19.0
 
 run: 
 	@echo "Starting scheduler server..."

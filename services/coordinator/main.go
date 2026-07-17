@@ -21,7 +21,7 @@ import (
 	coordinatorv1 "github.com/surajgoraicse/orchestrix/api/gen/go/coordinator/v1"
 	workerv1 "github.com/surajgoraicse/orchestrix/api/gen/go/worker/v1"
 	"github.com/surajgoraicse/orchestrix/libs/go-libs/database"
-	"github.com/surajgoraicse/orchestrix/services/coordinator/internals/config"
+	"github.com/surajgoraicse/orchestrix/services/coordinator/internal/config"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )

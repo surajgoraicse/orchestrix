@@ -15,7 +15,7 @@ import (
 	_ "github.com/joho/godotenv/autoload"
 	coordinatorv1 "github.com/surajgoraicse/orchestrix/api/gen/go/coordinator/v1"
 	workerv1 "github.com/surajgoraicse/orchestrix/api/gen/go/worker/v1"
-	"github.com/surajgoraicse/orchestrix/services/worker/internals/config"
+	"github.com/surajgoraicse/orchestrix/services/worker/internal/config"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )

@@ -17,7 +17,7 @@ import (
 	"github.com/joho/godotenv"
 
 	"github.com/surajgoraicse/orchestrix/libs/go-libs/database"
-	"github.com/surajgoraicse/orchestrix/services/scheduler/internals/config"
+	"github.com/surajgoraicse/orchestrix/services/scheduler/internal/config"
 )
 
 func main() {
