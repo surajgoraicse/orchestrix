@@ -15,6 +15,7 @@ type DbConfig struct {
 	DBUser                string
 	DBPassword            string
 	DBName                string
+	DBSchema              string
 	SSLMode               string
 	DBMaxConn             int32
 	DBMinConn             int32
@@ -94,7 +95,11 @@ func (ds *DatabaseService) withPgxConfig() (*pgxpool.Config, error) {
 	if dbConfig.ConnConfig.RuntimeParams == nil {
 		dbConfig.ConnConfig.RuntimeParams = make(map[string]string)
 	}
-	dbConfig.ConnConfig.RuntimeParams["search_path"] = fmt.Sprintf("%s,public", dbURLConfig.DBName)
+	schema := dbURLConfig.DBSchema
+	if schema == "" {
+		schema = dbURLConfig.DBName
+	}
+	dbConfig.ConnConfig.RuntimeParams["search_path"] = fmt.Sprintf("%s,public", schema)
 
 	return dbConfig, nil
 }
@@ -106,6 +111,7 @@ func (ds *DatabaseService) loadDBConnectionConfig() (*DbConfig, error) {
 		DBUser:                ds.dbConfig.DBUser,
 		DBPassword:            ds.dbConfig.DBPassword,
 		DBName:                ds.dbConfig.DBName,
+		DBSchema:              ds.dbConfig.DBSchema,
 		SSLMode:               ds.dbConfig.SSLMode,
 		DBMaxConn:             ds.dbConfig.DBMaxConn,
 		DBMinConn:             ds.dbConfig.DBMinConn,

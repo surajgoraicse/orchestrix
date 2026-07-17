@@ -1,9 +1,12 @@
 include .env
 
-.PHONY: run
+.PHONY: run db-init reset-db db-reset sqlc migrate-up migrate-down
 
 DOCKER_POSTGRES_SERVICE_NAME=postgres
 DB_URL := postgres://$(DB_USER):$(DB_PASSWORD)@$(DOCKER_POSTGRES_SERVICE_NAME):$(DB_PORT)/$(DB_NAME)?sslmode=$(SSL_MODE)
+SQLC_FILE := internal/db/sqlc.yaml
+SQLC := $(shell command -v sqlc 2>/dev/null)
+
 
 # We mount our local internal/db/migrations folder.
 # We attach to the 'orchestrix' network so we can resolve the 'shared_postgres' container by name.
@@ -12,6 +15,9 @@ MIGRATE_CMD := docker run --rm -v $(shell pwd)/internal/db/migrations:/migration
 run: 
 	@echo "Starting scheduler server..."
 	go run main.go
+
+
+# ------------------- Database ------------------------
 
 # Database initialization - run only consolidated baseline migration
 db-init:
@@ -42,3 +48,12 @@ migrate-down:
 	@echo "Rolling back scheduler migrations..."
 	@$(MIGRATE_CMD) -path=/migrations -database "$(DB_URL)" down 1
 	@echo "Scheduler migrations rolled back successfully!"
+
+sqlc:
+	@echo "Generating sqlc queries..."
+	@if [ -n "$(SQLC)" ]; then \
+		$(SQLC) generate -f ${SQLC_FILE}; \
+	else \
+		go run github.com/sqlc-dev/sqlc/cmd/sqlc@v1.30.0 generate -f ${SQLC_FILE}; \
+	fi
+	@echo "SQLC queries generated!"

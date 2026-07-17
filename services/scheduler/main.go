@@ -84,6 +84,7 @@ func (s *SchedulerServer) getDbConfig() *database.DbConfig {
 		DBUser:                s.config.DbUser,
 		DBPassword:            s.config.DbPassword,
 		DBName:                s.config.DbName,
+		DBSchema:              s.config.DbSchema,
 		SSLMode:               s.config.SSLMode,
 		DBMaxConn:             10,
 		DBMinConn:             1,
@@ -227,7 +228,7 @@ func (s *SchedulerServer) handleGetTaskStatus(w http.ResponseWriter, r *http.Req
 
 func (s *SchedulerServer) insertTaskIntoDb(ctx context.Context, task Task) (string, error) {
 	sqlStatement := `
-		INSERT INTO scheduler.tasks (task, scheduled_at) VALUES ($1, $2) RETURNING id
+		INSERT INTO tasks (task, scheduled_at) VALUES ($1, $2) RETURNING id
 	`
 	var taskID string
 	err := s.dbPool.QueryRow(ctx, sqlStatement, task.Task, task.ScheduledAt).Scan(&taskID)
