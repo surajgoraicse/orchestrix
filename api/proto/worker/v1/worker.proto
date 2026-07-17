@@ -5,17 +5,16 @@ package worker.v1;
 option go_package = "github.com/surajgoraicse/orchestrix/api/gen/go/worker/v1;workerv1";
 
 service WorkerService {
-    rpc SubmitTask(SubmitTaskRequest) returns (SubmitTaskResponse);
+  rpc SubmitTask(SubmitTaskRequest) returns (SubmitTaskResponse);
 }
 
 message SubmitTaskRequest {
-    string task_id = 1;
-    string task_payload = 2;
+  string task_id = 1;
+  string task_payload = 2;
 }
 
 message SubmitTaskResponse {
-    string task_id = 1;
-    string message = 2;
-    bool success = 3;
+  string task_id = 1;
+  string message = 2;
+  bool success = 3;
 }
-    
