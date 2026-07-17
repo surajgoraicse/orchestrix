@@ -24,3 +24,11 @@ env.bash
 
 # docker-compose volume
 pg_volume/
+
+
+#######################################
+# Go (backend/)
+#######################################
+
+# generated files 
+sqlc/
