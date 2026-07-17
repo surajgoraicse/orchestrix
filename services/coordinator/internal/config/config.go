@@ -13,6 +13,7 @@ type Config struct {
 	DbUser     string
 	DbPassword string
 	DbName     string
+	DbSchema   string
 	SSLMode    string
 
 	// coordinator server
@@ -30,6 +31,7 @@ func NewConfig() *Config {
 		DbUser:     dotenv.GetEnv("DB_USER"),
 		DbPassword: dotenv.GetEnv("DB_PASSWORD"),
 		DbName:     dotenv.GetEnv("DB_NAME"),
+		DbSchema:   dotenv.GetEnv("DB_SCHEMA"),
 		SSLMode:    dotenv.GetEnv("SSL_MODE"),
 
 		// server
