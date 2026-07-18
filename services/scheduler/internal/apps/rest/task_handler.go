@@ -1,8 +1,10 @@
 package rest
 
 import (
+	"errors"
 	"net/http"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/labstack/echo/v5"
 	"github.com/surajgoraicse/orchestrix/libs/go-libs/response"
 	"github.com/surajgoraicse/orchestrix/services/scheduler/internal/modules/tasks"
@@ -38,5 +40,18 @@ func (t *TaskHandler) ScheduleTask(c *echo.Context) error {
 }
 
 func (t *TaskHandler) GetTaskStatus(c *echo.Context) error {
-	return nil
+	taskID := c.Param("taskID")
+	if taskID == "" {
+		return response.NewResponse(c, http.StatusBadRequest, "Invalid request", nil, errors.New("taskID is required"))
+	}
+
+	task, err := t.taskService.GetTaskStatus(c.Request().Context(), taskID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return response.NewResponse(c, http.StatusNotFound, "Task not found", nil, err)
+		}
+		return response.NewResponse(c, http.StatusInternalServerError, "Failed to get task status", nil, err)
+	}
+
+	return response.NewResponse(c, http.StatusOK, "Task status fetched successfully", task, nil)
 }
