@@ -15,7 +15,7 @@ type ScheduleTaskResponse struct {
 	ScheduledAt string `json:"scheduled_at"`
 }
 
-type TaskStatus struct {
+type Task struct {
 	ID          string     `json:"id"`
 	Task        string     `json:"task"`
 	ScheduledAt *time.Time `json:"scheduled_at"`
