@@ -12,12 +12,15 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
 
 	"github.com/surajgoraicse/orchestrix/libs/go-libs/database"
 	"github.com/surajgoraicse/orchestrix/services/scheduler/internal/config"
+	db_sqlc "github.com/surajgoraicse/orchestrix/services/scheduler/internal/db/sqlc"
 )
 
 func main() {
@@ -63,6 +66,7 @@ type TaskStatus struct {
 type SchedulerServer struct {
 	httpServer *http.Server
 	dbPool     *pgxpool.Pool
+	queries    *db_sqlc.Queries
 	ctx        context.Context
 	cancel     context.CancelFunc
 	config     *config.Config
@@ -103,6 +107,7 @@ func (s *SchedulerServer) Start() error {
 	if err != nil {
 		return err
 	}
+	s.queries = db_sqlc.New(s.dbPool)
 
 	http.HandleFunc("/schedule", s.handleScheduleTask)
 	http.HandleFunc("/status", s.handleGetTaskStatus)
@@ -227,34 +232,71 @@ func (s *SchedulerServer) handleGetTaskStatus(w http.ResponseWriter, r *http.Req
 }
 
 func (s *SchedulerServer) insertTaskIntoDb(ctx context.Context, task Task) (string, error) {
-	sqlStatement := `
-		INSERT INTO tasks (task, scheduled_at) VALUES ($1, $2) RETURNING id
-	`
-	var taskID string
-	err := s.dbPool.QueryRow(ctx, sqlStatement, task.Task, task.ScheduledAt).Scan(&taskID)
+	var scheduledAt pgtype.Timestamp
+	if task.ScheduledAt != nil {
+		scheduledAt.Time = *task.ScheduledAt
+		scheduledAt.Valid = true
+	}
+
+	uuidVal, err := s.queries.InsertTask(ctx, db_sqlc.InsertTaskParams{
+		Task:        task.Task,
+		ScheduledAt: scheduledAt,
+	})
 	if err != nil {
 		return "", err
 	}
-	return taskID, nil
+
+	var u uuid.UUID
+	copy(u[:], uuidVal.Bytes[:])
+	return u.String(), nil
 }
 
 func (s *SchedulerServer) getTaskFromDB(ctx context.Context, taskID string) (TaskStatus, error) {
-	sqlStatement := `
-		SELECT id, task, scheduled_at, picked_at, started_at, completed_at, failed_at, error FROM tasks WHERE id = $1
-	`
-	var taskStatus TaskStatus
-	err := s.dbPool.QueryRow(ctx, sqlStatement, taskID).Scan(
-		&taskStatus.ID,
-		&taskStatus.Task.Task,
-		&taskStatus.ScheduledAt,
-		&taskStatus.PickedAt,
-		&taskStatus.StartedAt,
-		&taskStatus.CompletedAt,
-		&taskStatus.FailedAt,
-		&taskStatus.Task.Error,
-	)
+	var pgUUID pgtype.UUID
+	if err := pgUUID.Scan(taskID); err != nil {
+		return TaskStatus{}, err
+	}
+
+	dbTask, err := s.queries.GetTask(ctx, pgUUID)
 	if err != nil {
 		return TaskStatus{}, err
 	}
-	return taskStatus, nil
+
+	var u uuid.UUID
+	copy(u[:], dbTask.ID.Bytes[:])
+
+	var taskError string
+	if dbTask.Error.Valid {
+		taskError = dbTask.Error.String
+	}
+
+	return TaskStatus{
+		Task: Task{
+			ID:          u.String(),
+			Task:        dbTask.Task,
+			ScheduledAt: toTimePtr(dbTask.ScheduledAt),
+			PickedAt:    toTimePtr(dbTask.PickedAt),
+			StartedAt:   toTimePtr(dbTask.StartedAt),
+			CompletedAt: toTimePtr(dbTask.CompletedAt),
+			FailedAt:    toTimePtr(dbTask.FailedAt),
+			Error:       toStringPtr(dbTask.Error),
+		},
+		Error: taskError,
+	}, nil
+}
+
+func toTimePtr(ts pgtype.Timestamp) *time.Time {
+	if !ts.Valid {
+		return nil
+	}
+	t := ts.Time
+	return &t
+}
+
+func toStringPtr(txt pgtype.Text) *string {
+	if !txt.Valid {
+		return nil
+	}
+	s := txt.String
+	return &s
 }

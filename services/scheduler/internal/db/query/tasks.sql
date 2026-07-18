@@ -18,3 +18,6 @@ UPDATE tasks SET completed_at = $1, error = $2 WHERE id = $3;
 
 -- name: UpdateTaskFailed :exec
 UPDATE tasks SET failed_at = $1, error = $2 WHERE id = $3;
+
+-- name: GetTask :one
+SELECT id, task, scheduled_at, picked_at, started_at, completed_at, failed_at, error FROM tasks WHERE id = $1;
