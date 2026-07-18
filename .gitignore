@@ -21,7 +21,9 @@ bin/
 
 # env
 .env
-env.bash
+.env.prod
+.env.local
+
 
 # docker-compose volume
 pg_volume/
