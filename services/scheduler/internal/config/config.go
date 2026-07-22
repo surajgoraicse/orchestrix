@@ -13,6 +13,7 @@ type Config struct {
 	SSLMode    string
 
 	// server
+	ServiceName    string
 	RestServerPort int
 	AppMode        string
 }
@@ -29,7 +30,8 @@ func NewConfig() *Config {
 		SSLMode:    dotenv.GetEnv("SSL_MODE"),
 
 		// server
+		ServiceName:    dotenv.GetEnv("SERVICE_NAME"),
 		RestServerPort: dotenv.GetEnvNumber("REST_SERVER_PORT"),
-		AppMode:        dotenv.GetEnv("APP_MODE"),
+		AppMode:        dotenv.GetEnvOrDefault("APP_MODE", "dev"),
 	}
 }

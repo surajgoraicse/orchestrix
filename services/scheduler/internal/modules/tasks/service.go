@@ -3,26 +3,28 @@ package tasks
 import (
 	"context"
 	"fmt"
-	"log"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 	db_sqlc "github.com/surajgoraicse/orchestrix/services/scheduler/internal/db/sqlc"
+	"go.uber.org/zap"
 )
 
 type TaskService struct {
 	queries *db_sqlc.Queries
+	logger  *zap.Logger
 }
 
-func NewTaskService(queries *db_sqlc.Queries) *TaskService {
+func NewTaskService(queries *db_sqlc.Queries, logger *zap.Logger) *TaskService {
 	return &TaskService{
 		queries: queries,
+		logger:  logger,
 	}
 }
 
 func (t *TaskService) ScheduleTask(ctx context.Context, req *ScheduleTaskRequest) (*ScheduleTaskResponse, error) {
-	log.Println("Received task request: ", req)
+	t.logger.Info("Received task request: ", zap.Any("req", req))
 
 	// Parse the scheduled_at time
 	scheduledTime, err := time.Parse(time.RFC3339, req.ScheduledAt)

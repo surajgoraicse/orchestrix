@@ -3,11 +3,11 @@ package rest
 import (
 	"context"
 	"fmt"
-	"log"
 	"net/http"
 	"time"
 
 	"github.com/labstack/echo/v5"
+	"go.uber.org/zap"
 )
 
 // RestHandlers groups all our REST handlers.
@@ -31,13 +31,14 @@ func (r *RestHandlers) RegisterRoutes(e *echo.Echo) {
 
 type RestServer struct {
 	httpServer *http.Server
+	logger     *zap.Logger
 }
 
 // Start starts the REST server in a seperate goroutine.
 func (s *RestServer) Start() error {
 	go func() {
 		if err := s.httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("Failed to start REST server: %v\n", err)
+			s.logger.Fatal("Failed to start REST server ", zap.Error(err))
 		}
 	}()
 	return nil

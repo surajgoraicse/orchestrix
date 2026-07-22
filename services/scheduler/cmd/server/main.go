@@ -11,7 +11,9 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/surajgoraicse/orchestrix/services/scheduler/internal/apps/grpc"
 	"github.com/surajgoraicse/orchestrix/services/scheduler/internal/apps/rest"
+	"github.com/surajgoraicse/orchestrix/services/scheduler/internal/config"
 	"github.com/surajgoraicse/orchestrix/services/scheduler/internal/container"
+	"go.uber.org/zap"
 )
 
 type Server interface {
@@ -27,8 +29,11 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
+	// config
+	config := config.NewConfig()
+
 	// Load the Dependencies
-	di := container.NewContainer(ctx)
+	di := container.NewContainer(ctx, config)
 	defer di.Close()
 
 	// start the server based on the app mode
@@ -44,7 +49,7 @@ func main() {
 
 	// start the server in a seperate goroutine
 	if err := server.Start(); err != nil {
-		log.Fatalf("Failed to start server: %v\n", err)
+		di.Logger.Fatal("Failed to start server: ", zap.Error(err))
 	}
 
 	// graceful shutdown
