@@ -6,6 +6,7 @@ DOCKER_POSTGRES_SERVICE_NAME=postgres
 DB_URL := postgres://$(DB_USER):$(DB_PASSWORD)@$(DOCKER_POSTGRES_SERVICE_NAME):$(DB_PORT)/$(DB_NAME)?sslmode=$(SSL_MODE)
 SQLC_FILE := internal/db/sqlc.yaml
 SQLC := $(shell command -v sqlc 2>/dev/null)
+MAIN = cmd/server/main.go
 
 
 # We mount our local internal/db/migrations folder.
@@ -14,7 +15,7 @@ MIGRATE_CMD := docker run --rm -v $(shell pwd)/internal/db/migrations:/migration
 
 run: 
 	@echo "Starting scheduler server..."
-	go run main.go
+	@go run ${MAIN}
 
 
 # ------------------- Database ------------------------
