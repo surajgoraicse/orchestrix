@@ -49,7 +49,7 @@ type Container struct {
 func NewContainer(ctx context.Context, config *config.Config) *Container {
 
 	// initialize the logger
-	logger, err := logger.InitLogger(config.ServiceName, config.AppMode)
+	logger, err := logger.InitLogger(config.ServiceName, config.Environment)
 	if err != nil {
 		log.Fatalf("Failed to initialize logger: %v\n", err)
 	}

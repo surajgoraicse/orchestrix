@@ -16,6 +16,7 @@ type Config struct {
 	ServiceName    string
 	RestServerPort int
 	AppMode        string
+	Environment    string
 }
 
 func NewConfig() *Config {
@@ -32,6 +33,7 @@ func NewConfig() *Config {
 		// server
 		ServiceName:    dotenv.GetEnv("SERVICE_NAME"),
 		RestServerPort: dotenv.GetEnvNumber("REST_SERVER_PORT"),
-		AppMode:        dotenv.GetEnvOrDefault("APP_MODE", "dev"),
+		AppMode:        dotenv.GetEnvOrDefault("APP_MODE", "rest"),
+		Environment:    dotenv.GetEnvOrDefault("ENVIRONMENT", "dev"),
 	}
 }
