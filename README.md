@@ -1,7 +1,8 @@
-# Orchestrix: Task Scheduler in Go
+# Orchestrix: Distributed Task Scheduler in Go
 
-![Orchestrix Hero](assets/lightmode.png#gh-light-mode-only)
-![Orchestrix Hero](assets/darkmode.png#gh-dark-mode-only)
+<!-- ![Orchestrix Hero](assets/lightmode.png#gh-light-mode-only) -->
+<!-- ![Orchestrix Hero](assets/darkmode.png#gh-dark-mode-only) -->
+![Orchestrix Hero](assets/architecture.png)
 
 Orchestrix is a robust and efficient task scheduler made for educational purposes and written in Go. It's designed to handle a high volume of tasks, distribute them across multiple workers for execution.
 
