@@ -24,17 +24,17 @@ services:
     #         - orchestrix
 
     # services
-    scheduler:
-        build:
-            context: ..
-            dockerfile: services/scheduler/Dockerfile
-        container_name: scheduler
-        ports:
-            - ${SCHEDULER_SERVER_PORT:?ERROR-SERVER_PORT is not set}:8000
-        env_file:
-            - ../services/scheduler/.env
-        networks:
-            - orchestrix
+    # scheduler:
+    #     build:
+    #         context: ..
+    #         dockerfile: services/scheduler/Dockerfile
+    #     container_name: scheduler
+    #     ports:
+    #         - ${SCHEDULER_SERVER_PORT:?ERROR-SERVER_PORT is not set}:8000
+    #     env_file:
+    #         - ../services/scheduler/.env
+    #     networks:
+    #         - orchestrix
 
 networks:
     orchestrix:

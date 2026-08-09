@@ -1,5 +1,7 @@
 SET search_path TO scheduler, public;
 
+CREATE TYPE task_status AS ENUM ('PENDING', 'DISPATCHED', 'COMPLETED', 'FAILED');
+
 -- =====================================================
 -- Helper Functions
 -- =====================================================
@@ -18,15 +20,31 @@ LANGUAGE plpgsql;
 -- =====================================================
 CREATE TABLE IF NOT EXISTS tasks(
     id uuid PRIMARY KEY DEFAULT uuidv7(),
-    task text NOT NULL,
-    scheduled_at timestamp NOT NULL,
-    picked_at timestamp,
-    started_at timestamp,
-    completed_at timestamp,
-    failed_at timestamp,
+
+    -- task routing
+    task_type varchar(255) NOT NULL,
+    payload jsonb NOT NULL,
+
+    -- task state
+    status task_status NOT NULL DEFAULT 'PENDING',
+
+    -- retry states
+    max_retries int NOT NULL DEFAULT 3,
+    attempt_count int NOT NULL DEFAULT 0,
+
+    -- task timeline
+    scheduled_at timestamptz NOT NULL,
+    picked_at timestamptz,
+    started_at timestamptz,
+    completed_at timestamptz,
+    failed_at timestamptz,
+
+    -- error tracking
     error text,
-    created_at timestamp DEFAULT NOW(),
-    updated_at timestamp DEFAULT NOW()
+
+    -- audit trails
+    created_at timestamptz DEFAULT NOW(),
+    updated_at timestamptz DEFAULT NOW()
 );
 
 CREATE TRIGGER trg_tasks_updated_at
