@@ -9,6 +9,12 @@ SELECT id, task_type, payload,status, max_retries, attempt_count, scheduled_at, 
 -- name: GetDueTasks :many
 SELECT id, task_type, payload FROM tasks WHERE scheduled_at < (NOW() + INTERVAL '30 seconds') AND attempt_count < max_retries AND picked_at IS NULL ORDER BY scheduled_at FOR UPDATE SKIP LOCKED LIMIT $1;
 
+-- name: SoftDeleteTask :exec
+UPDATE tasks SET deleted_at = NOW(), is_deleted = true WHERE id = $1;
+
+-- name: EditTask :exec
+UPDATE tasks SET task_type = $1, payload = $2, max_retries = $3, scheduled_at = $4 WHERE id = $5;
+
 -- name: MarkTaskAsPicked :exec
 UPDATE tasks SET picked_at = NOW(), attempt_count = attempt_count + 1 WHERE id = $1;
 

@@ -42,6 +42,10 @@ CREATE TABLE IF NOT EXISTS tasks(
     -- error tracking
     error text,
 
+    -- soft delete
+    deleted_at timestamptz,
+    is_deleted boolean DEFAULT false,
+
     -- audit trails
     created_at timestamptz DEFAULT NOW(),
     updated_at timestamptz DEFAULT NOW()

@@ -20,7 +20,8 @@ func NewTaskRepo(queries *db_sqlc.Queries) *TaskRepo {
 	}
 }
 
-func (t *TaskRepo) CreateTask(ctx context.Context, task *Task) (string, error) {
+// CreateTask : Creates a new task
+func (t *TaskRepo) CreateTask(ctx context.Context, task *Task) (uuid.UUID, error) {
 	var scheduledAt pgtype.Timestamptz
 	if task.ScheduledAt != nil {
 		scheduledAt.Time = *task.ScheduledAt
@@ -34,10 +35,9 @@ func (t *TaskRepo) CreateTask(ctx context.Context, task *Task) (string, error) {
 		ScheduledAt: scheduledAt,
 	})
 	if err != nil {
-		return "", err
+		return uuid.Nil, err
 	}
-	return id.String(), nil
-
+	return uuid.UUID(id.Bytes), nil
 }
 
 // FetchTaskByID : Fetches the task by ID from the database
@@ -83,6 +83,44 @@ func (t *TaskRepo) FetchDueTasks(ctx context.Context, limit int) ([]Task, error)
 	return tasks, nil
 }
 
+// EditTask : Edits the task
+func (t *TaskRepo) EditTask(ctx context.Context, task *Task) error {
+	pgUUID, err := pg.GetPgUUIDFromUUID(task.ID)
+	if err != nil {
+		return err
+	}
+	var scheduledAt pgtype.Timestamptz
+	if task.ScheduledAt != nil {
+		scheduledAt.Time = *task.ScheduledAt
+		scheduledAt.Valid = true
+	}
+	err = t.queries.EditTask(ctx, db_sqlc.EditTaskParams{
+		TaskType:    task.TaskType,
+		Payload:     task.Payload,
+		MaxRetries:  int32(task.MaxRetries),
+		ScheduledAt: scheduledAt,
+		ID:          pgUUID,
+	})
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// SoftDeleteTask : Soft deletes the task
+func (t *TaskRepo) SoftDeleteTask(ctx context.Context, taskID uuid.UUID) error {
+	pgUUID, err := pg.GetPgUUIDFromUUID(taskID)
+	if err != nil {
+		return err
+	}
+	err = t.queries.SoftDeleteTask(ctx, pgUUID)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// MarkTaskAsDispatched : Marks the task as dispatched
 func (t *TaskRepo) MarkTaskAsDispatched(ctx context.Context, taskID uuid.UUID) error {
 	pgUUID, err := pg.GetPgUUIDFromUUID(taskID)
 	if err != nil {
@@ -95,6 +133,7 @@ func (t *TaskRepo) MarkTaskAsDispatched(ctx context.Context, taskID uuid.UUID) e
 	return nil
 }
 
+// MarkTaskAsCompleted : Marks the task as completed
 func (t *TaskRepo) MarkTaskAsCompleted(ctx context.Context, taskID uuid.UUID) error {
 	pgUUID, err := pg.GetPgUUIDFromUUID(taskID)
 	if err != nil {

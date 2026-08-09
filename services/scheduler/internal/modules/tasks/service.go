@@ -51,7 +51,11 @@ func (t *TaskService) ScheduleTask(ctx context.Context, req *ScheduleTaskRequest
 		Payload:     req.Payload,
 		ScheduledAt: req.ScheduledAt,
 	}, nil
+}
 
+// EditTask : Edits the task
+func (t *TaskService) EditTask(ctx context.Context, task *Task) error {
+	return t.repo.EditTask(ctx, task)
 }
 
 // GetTaskStatus : fetch the task status from database based on the task id

@@ -24,18 +24,22 @@ type Task struct {
 
 type TaskRepository interface {
 	CreateTask(ctx context.Context, task *Task) (string, error)
+	EditTask(ctx context.Context, task *Task) error
 	FetchDueTasks(ctx context.Context, limit int) ([]Task, error)
 	FetchTaskByID(ctx context.Context, taskID uuid.UUID) (*Task, error)
+	SoftDeleteTask(ctx context.Context, taskID uuid.UUID) error
+	MarkTaskAsPicked(ctx context.Context, taskID uuid.UUID) error
 	MarkTaskAsDispatched(ctx context.Context, taskIDs uuid.UUID) error
 	MarkTaskAsCompleted(ctx context.Context, taskID uuid.UUID) error
 	MarkTaskAsFailed(ctx context.Context, taskID uuid.UUID, err error) error
 	IncrementAttemptCount(ctx context.Context, taskID uuid.UUID) error
-	MarkTaskAsPicked(ctx context.Context, taskID uuid.UUID) error
 }
 
 type ITaskService interface {
 	ScheduleTask(ctx context.Context, req *ScheduleTaskRequest) (*ScheduleTaskResponse, error)
-	GetTaskStatus(ctx context.Context, taskID string) (*Task, error)
+	GetTaskStatus(ctx context.Context, taskID uuid.UUID) (*Task, error)
+	EditTask(ctx context.Context, taskID uuid.UUID, req ScheduleTaskRequest) (ScheduleTaskResponse, error)
+	DeleteTask(ctx context.Context, taskID uuid.UUID) error
 }
 
 type TaskPublisher interface {
