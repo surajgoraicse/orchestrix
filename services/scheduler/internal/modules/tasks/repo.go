@@ -7,7 +7,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/surajgoraicse/orchestrix/libs/go-libs/database/pg"
-	"github.com/surajgoraicse/orchestrix/libs/go-libs/utils"
 	db_sqlc "github.com/surajgoraicse/orchestrix/services/scheduler/internal/db/sqlc"
 )
 
@@ -43,7 +42,7 @@ func (t *TaskRepo) CreateTask(ctx context.Context, task *Task) (string, error) {
 
 // FetchTaskByID : Fetches the task by ID from the database
 func (t *TaskRepo) FetchTaskByID(ctx context.Context, taskID uuid.UUID) (*Task, error) {
-	pgUUID, err := utils.GetPgUUIDFromUUID(taskID)
+	pgUUID, err := pg.GetPgUUIDFromUUID(taskID)
 	if err != nil {
 		return nil, err
 	}
@@ -84,22 +83,20 @@ func (t *TaskRepo) FetchDueTasks(ctx context.Context, limit int) ([]Task, error)
 	return tasks, nil
 }
 
-func (t *TaskRepo) MarkTaskAsDispatched(ctx context.Context, taskIDs []uuid.UUID) error {
-	for _, taskID := range taskIDs {
-		pgUUID, err := utils.GetPgUUIDFromUUID(taskID)
-		if err != nil {
-			return err
-		}
-		err = t.queries.MarkTaskAsDispatched(ctx, pgUUID)
-		if err != nil {
-			return err
-		}
+func (t *TaskRepo) MarkTaskAsDispatched(ctx context.Context, taskID uuid.UUID) error {
+	pgUUID, err := pg.GetPgUUIDFromUUID(taskID)
+	if err != nil {
+		return err
+	}
+	err = t.queries.MarkTaskAsDispatched(ctx, pgUUID)
+	if err != nil {
+		return err
 	}
 	return nil
 }
 
 func (t *TaskRepo) MarkTaskAsCompleted(ctx context.Context, taskID uuid.UUID) error {
-	pgUUID, err := utils.GetPgUUIDFromUUID(taskID)
+	pgUUID, err := pg.GetPgUUIDFromUUID(taskID)
 	if err != nil {
 		return err
 	}
@@ -122,7 +119,7 @@ func (t *TaskRepo) MarkTaskAsCompleted(ctx context.Context, taskID uuid.UUID) er
 
 // mark the task as failed and also update the error message
 func (t *TaskRepo) MarkTaskAsFailed(ctx context.Context, taskID uuid.UUID, taskErr error) error {
-	pgUUID, err := utils.GetPgUUIDFromUUID(taskID)
+	pgUUID, err := pg.GetPgUUIDFromUUID(taskID)
 	if err != nil {
 		return err
 	}
@@ -145,7 +142,7 @@ func (t *TaskRepo) MarkTaskAsFailed(ctx context.Context, taskID uuid.UUID, taskE
 
 // IncrementAttempCount : Increments the attemp count of a task
 func (t *TaskRepo) IncrementAttemptCount(ctx context.Context, taskID uuid.UUID) error {
-	pgUUID, err := utils.GetPgUUIDFromUUID(taskID)
+	pgUUID, err := pg.GetPgUUIDFromUUID(taskID)
 	if err != nil {
 		return err
 	}
@@ -158,7 +155,7 @@ func (t *TaskRepo) IncrementAttemptCount(ctx context.Context, taskID uuid.UUID) 
 
 // MarkTaskAsPicked marks the task as picked and also increments the attempt count
 func (t *TaskRepo) MarkTaskAsPicked(ctx context.Context, taskID uuid.UUID) error {
-	pgUUID, err := utils.GetPgUUIDFromUUID(taskID)
+	pgUUID, err := pg.GetPgUUIDFromUUID(taskID)
 	if err != nil {
 		return err
 	}

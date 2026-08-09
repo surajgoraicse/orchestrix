@@ -26,7 +26,7 @@ type TaskRepository interface {
 	CreateTask(ctx context.Context, task *Task) (string, error)
 	FetchDueTasks(ctx context.Context, limit int) ([]Task, error)
 	FetchTaskByID(ctx context.Context, taskID uuid.UUID) (*Task, error)
-	MarkTaskAsDispatched(ctx context.Context, taskIDs []uuid.UUID) error
+	MarkTaskAsDispatched(ctx context.Context, taskIDs uuid.UUID) error
 	MarkTaskAsCompleted(ctx context.Context, taskID uuid.UUID) error
 	MarkTaskAsFailed(ctx context.Context, taskID uuid.UUID, err error) error
 	IncrementAttemptCount(ctx context.Context, taskID uuid.UUID) error
