@@ -59,12 +59,8 @@ func (t *TaskService) EditTask(ctx context.Context, task *Task) error {
 }
 
 // GetTaskStatus : fetch the task status from database based on the task id
-func (t *TaskService) GetTaskStatus(ctx context.Context, taskID string) (*Task, error) {
-	parsedUUID, err := uuid.Parse(taskID)
-	if err != nil {
-		return nil, fmt.Errorf("invalid task id: %w", err)
-	}
-	return t.repo.FetchTaskByID(ctx, parsedUUID)
+func (t *TaskService) GetTaskStatus(ctx context.Context, taskID uuid.UUID) (*Task, error) {
+	return t.repo.FetchTaskByID(ctx, taskID)
 }
 
 // FetchDueTasks : fetch the due tasks from database that are ready to be processed
@@ -73,46 +69,27 @@ func (t *TaskService) FetchDueTasks(ctx context.Context, limit int) ([]Task, err
 }
 
 // MarkTaskAsCompleted : Mark the task as completed
-func (t *TaskService) MarkTaskAsCompleted(ctx context.Context, taskID string) error {
-	parsedUUID, err := uuid.Parse(taskID)
-	if err != nil {
-		return fmt.Errorf("invalid task id: %w", err)
-	}
-	return t.repo.MarkTaskAsCompleted(ctx, parsedUUID)
+func (t *TaskService) MarkTaskAsCompleted(ctx context.Context, taskID uuid.UUID) error {
+	return t.repo.MarkTaskAsCompleted(ctx, taskID)
 }
 
 // MarkTaskAsFailed : Mark the task as failed
-func (t *TaskService) MarkTaskAsFailed(ctx context.Context, taskID string, taskErr error) error {
-	parsedUUID, err := uuid.Parse(taskID)
-	if err != nil {
-		return fmt.Errorf("invalid task id: %w", err)
-	}
-	return t.repo.MarkTaskAsFailed(ctx, parsedUUID, taskErr)
+func (t *TaskService) MarkTaskAsFailed(ctx context.Context, taskID uuid.UUID, taskErr error) error {
+	return t.repo.MarkTaskAsFailed(ctx, taskID, taskErr)
 }
 
 // MarkTaskAsDispatched : Mark the task as dispatch
-func (t *TaskService) MarkTaskAsDispatched(ctx context.Context, taskID string) error {
-	parsedUUID, err := uuid.Parse(taskID)
-	if err != nil {
-		return fmt.Errorf("invalid task id: %w", err)
-	}
-	return t.repo.MarkTaskAsDispatched(ctx, parsedUUID)
+func (t *TaskService) MarkTaskAsDispatched(ctx context.Context, taskID uuid.UUID) error {
+	return t.repo.MarkTaskAsDispatched(ctx, taskID)
 }
 
 // MarkTaskAsPicked : Mark the task as picked
-func (t *TaskService) MarkTaskAsPicked(ctx context.Context, taskID string) error {
-	parsedUUID, err := uuid.Parse(taskID)
-	if err != nil {
-		return fmt.Errorf("invalid task id: %w", err)
-	}
-	return t.repo.MarkTaskAsPicked(ctx, parsedUUID)
+func (t *TaskService) MarkTaskAsPicked(ctx context.Context, taskID uuid.UUID) error {
+
+	return t.repo.MarkTaskAsPicked(ctx, taskID)
 }
 
 // IncrementAttemptCount : Increment the attempt count of a task
-func (t *TaskService) IncrementAttemptCount(ctx context.Context, taskID string) error {
-	parsedUUID, err := uuid.Parse(taskID)
-	if err != nil {
-		return fmt.Errorf("invalid task id: %w", err)
-	}
-	return t.repo.IncrementAttemptCount(ctx, parsedUUID)
+func (t *TaskService) IncrementAttemptCount(ctx context.Context, taskID uuid.UUID) error {
+	return t.repo.IncrementAttemptCount(ctx, taskID)
 }

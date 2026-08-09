@@ -28,6 +28,7 @@ func (t *TaskHandler) RegisterRoutes(router *echo.Group) {
 	router.DELETE("/:taskID", t.DeleteTask)
 }
 
+// ScheduleTask : Schedule a new task
 func (t *TaskHandler) ScheduleTask(c *echo.Context) error {
 	var taskRequest tasks.ScheduleTaskRequest
 	if err := c.Bind(&taskRequest); err != nil {
@@ -42,6 +43,7 @@ func (t *TaskHandler) ScheduleTask(c *echo.Context) error {
 	return response.NewResponse(c, http.StatusOK, "Task scheduled successfully", task, nil)
 }
 
+// GetTaskByID : Get the task by id
 func (t *TaskHandler) GetTaskByID(c *echo.Context) error {
 	taskID := c.Param("taskID")
 	if taskID == "" {
@@ -62,6 +64,7 @@ func (t *TaskHandler) GetTaskByID(c *echo.Context) error {
 	return response.NewResponse(c, http.StatusOK, "Task status fetched successfully", task, nil)
 }
 
+// EditTask : Edit the task
 func (t *TaskHandler) EditTask(c *echo.Context) error {
 	taskID := c.Param("taskID")
 	if taskID == "" {
@@ -88,6 +91,7 @@ func (t *TaskHandler) EditTask(c *echo.Context) error {
 	return response.NewResponse(c, http.StatusOK, "Task edited successfully", task, nil)
 }
 
+// DeleteTask : Delete the task
 func (t *TaskHandler) DeleteTask(c *echo.Context) error {
 	taskID := c.Param("taskID")
 	if taskID == "" {

@@ -40,6 +40,12 @@ type ITaskService interface {
 	GetTaskStatus(ctx context.Context, taskID uuid.UUID) (*Task, error)
 	EditTask(ctx context.Context, taskID uuid.UUID, req ScheduleTaskRequest) (ScheduleTaskResponse, error)
 	DeleteTask(ctx context.Context, taskID uuid.UUID) error
+	IncrementAttemptCount(ctx context.Context, taskID uuid.UUID) error
+	FetchDueTasks(ctx context.Context, limit int) ([]Task, error)
+	MarkTaskAsCompleted(ctx context.Context, taskID uuid.UUID) error
+	MarkTaskAsFailed(ctx context.Context, taskID uuid.UUID, err error) error
+	MarkTaskAsPicked(ctx context.Context, taskID uuid.UUID) error
+	MarkTaskAsDispatched(ctx context.Context, taskID uuid.UUID) error
 }
 
 type TaskPublisher interface {
