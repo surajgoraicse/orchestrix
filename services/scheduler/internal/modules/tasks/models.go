@@ -33,6 +33,11 @@ type TaskRepository interface {
 	MarkTaskAsPicked(ctx context.Context, taskID uuid.UUID) error
 }
 
+type ITaskService interface {
+	ScheduleTask(ctx context.Context, req *ScheduleTaskRequest) (*ScheduleTaskResponse, error)
+	GetTaskStatus(ctx context.Context, taskID string) (*Task, error)
+}
+
 type TaskPublisher interface {
 	Publish(ctx context.Context, task *Task) error
 }
