@@ -4,7 +4,7 @@ INSERT INTO tasks(task_type, payload, max_retries, scheduled_at)
 RETURNING id;
 
 -- name: GetTask :one
-SELECT id, task_type, payload, scheduled_at, picked_at, started_at, completed_at, failed_at, error FROM tasks WHERE id = $1;
+SELECT id, task_type, payload,status, max_retries, attempt_count, scheduled_at, picked_at, dispatched_at, completed_at, failed_at, error FROM tasks WHERE id = $1;
 
 -- name: GetDueTasks :many
 SELECT id, task_type, payload FROM tasks WHERE scheduled_at < (NOW() + INTERVAL '30 seconds') AND attempt_count < max_retries AND picked_at IS NULL ORDER BY scheduled_at FOR UPDATE SKIP LOCKED LIMIT $1;

@@ -25,7 +25,8 @@ type GrpcHandler struct {
 // NewHandlers creates a new set of handlers for the scheduler service.
 func NewHandlers(queries *db_sqlc.Queries, logger *zap.Logger) (*rest.RestHandlers, *GrpcHandler) {
 	// initialize the core services
-	taskService := tasks.NewTaskService(queries, logger)
+	taskRepo := tasks.NewTaskRepo(queries)
+	taskService := tasks.NewTaskService(taskRepo, logger)
 
 	return &rest.RestHandlers{
 			Tasks: rest.NewTaskHandler(taskService),

@@ -35,7 +35,7 @@ CREATE TABLE IF NOT EXISTS tasks(
     -- task timeline
     scheduled_at timestamptz NOT NULL,
     picked_at timestamptz,
-    started_at timestamptz,
+    dispatched_at timestamptz,
     completed_at timestamptz,
     failed_at timestamptz,
 

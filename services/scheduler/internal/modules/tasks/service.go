@@ -6,20 +6,18 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5/pgtype"
-	db_sqlc "github.com/surajgoraicse/orchestrix/services/scheduler/internal/db/sqlc"
 	"go.uber.org/zap"
 )
 
 type TaskService struct {
-	queries *db_sqlc.Queries
-	logger  *zap.Logger
+	repo   TaskRepository
+	logger *zap.Logger
 }
 
-func NewTaskService(queries *db_sqlc.Queries, logger *zap.Logger) *TaskService {
+func NewTaskService(repo TaskRepository, logger *zap.Logger) *TaskService {
 	return &TaskService{
-		queries: queries,
-		logger:  logger,
+		repo:   repo,
+		logger: logger,
 	}
 }
 
@@ -36,8 +34,10 @@ func (t *TaskService) ScheduleTask(ctx context.Context, req *ScheduleTaskRequest
 	unixTimestamp := time.Unix(scheduledTime.Unix(), 0)
 
 	// insert it into db
-	taskId, err := t.insertTaskIntoDb(ctx, Task{
-		Task:        req.Task,
+	taskId, err := t.repo.CreateTask(ctx, &Task{
+		TaskType:    req.TaskType,
+		Payload:     req.Payload,
+		MaxRetries:  req.MaxRetries,
 		ScheduledAt: &unixTimestamp,
 	})
 	if err != nil {
@@ -46,75 +46,17 @@ func (t *TaskService) ScheduleTask(ctx context.Context, req *ScheduleTaskRequest
 
 	return &ScheduleTaskResponse{
 		ID:          taskId,
-		Task:        req.Task,
+		TaskType:    req.TaskType,
+		Payload:     req.Payload,
 		ScheduledAt: req.ScheduledAt,
 	}, nil
 
 }
 
 func (t *TaskService) GetTaskStatus(ctx context.Context, taskID string) (*Task, error) {
-	return t.getTaskFromDB(ctx, taskID)
-}
-
-func (t *TaskService) insertTaskIntoDb(ctx context.Context, task Task) (string, error) {
-	var scheduledAt pgtype.Timestamp
-	if task.ScheduledAt != nil {
-		scheduledAt.Time = *task.ScheduledAt
-		scheduledAt.Valid = true
-	}
-
-	uuidVal, err := t.queries.InsertTask(ctx, db_sqlc.InsertTaskParams{
-		Task:        task.Task,
-		ScheduledAt: scheduledAt,
-	})
+	parsedUUID, err := uuid.Parse(taskID)
 	if err != nil {
-		return "", err
+		return nil, fmt.Errorf("invalid task id: %w", err)
 	}
-
-	var u uuid.UUID
-	copy(u[:], uuidVal.Bytes[:])
-	return u.String(), nil
-}
-
-func (t *TaskService) getTaskFromDB(ctx context.Context, taskID string) (*Task, error) {
-	var pgUUID pgtype.UUID
-	if err := pgUUID.Scan(taskID); err != nil {
-		return &Task{}, err
-	}
-
-	dbTask, err := t.queries.GetTask(ctx, pgUUID)
-	if err != nil {
-		return &Task{}, err
-	}
-
-	var u uuid.UUID
-	copy(u[:], dbTask.ID.Bytes[:])
-
-	return &Task{
-		ID:          u.String(),
-		Task:        dbTask.Task,
-		ScheduledAt: toTimePtr(dbTask.ScheduledAt),
-		PickedAt:    toTimePtr(dbTask.PickedAt),
-		StartedAt:   toTimePtr(dbTask.StartedAt),
-		CompletedAt: toTimePtr(dbTask.CompletedAt),
-		FailedAt:    toTimePtr(dbTask.FailedAt),
-		Error:       toStringPtr(dbTask.Error),
-	}, nil
-
-}
-
-func toTimePtr(ts pgtype.Timestamp) *time.Time {
-	if !ts.Valid {
-		return nil
-	}
-	t := ts.Time
-	return &t
-}
-
-func toStringPtr(txt pgtype.Text) *string {
-	if !txt.Valid {
-		return nil
-	}
-	s := txt.String
-	return &s
+	return t.repo.FetchTaskByID(ctx, parsedUUID)
 }

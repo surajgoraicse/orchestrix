@@ -6,6 +6,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/surajgoraicse/orchestrix/libs/go-libs/database/pg"
 	"github.com/surajgoraicse/orchestrix/libs/go-libs/utils"
 	db_sqlc "github.com/surajgoraicse/orchestrix/services/scheduler/internal/db/sqlc"
 )
@@ -40,16 +41,42 @@ func (t *TaskRepo) CreateTask(ctx context.Context, task *Task) (string, error) {
 
 }
 
+// FetchTaskByID : Fetches the task by ID from the database
+func (t *TaskRepo) FetchTaskByID(ctx context.Context, taskID uuid.UUID) (*Task, error) {
+	pgUUID, err := utils.GetPgUUIDFromUUID(taskID)
+	if err != nil {
+		return nil, err
+	}
+	dbtask, err := t.queries.GetTask(ctx, pgUUID)
+	if err != nil {
+		return nil, err
+	}
+	return &Task{
+		ID:           uuid.UUID(dbtask.ID.Bytes),
+		TaskType:     dbtask.TaskType,
+		Payload:      dbtask.Payload,
+		Status:       string(dbtask.Status),
+		MaxRetries:   int(dbtask.MaxRetries),
+		AttemptCount: int(dbtask.AttemptCount),
+		ScheduledAt:  pg.ToTimePtr(dbtask.ScheduledAt),
+		PickedAt:     pg.ToTimePtr(dbtask.PickedAt),
+		DispatchedAt: pg.ToTimePtr(dbtask.DispatchedAt),
+		CompletedAt:  pg.ToTimePtr(dbtask.CompletedAt),
+		FailedAt:     pg.ToTimePtr(dbtask.FailedAt),
+		Error:        pg.ToStringPtr(dbtask.Error),
+	}, nil
+}
+
 // FetchDueTasks : Fetches the due tasks from the database that are ready to be processed
-func (t *TaskRepo) FetchDueTasks(ctx context.Context, limit int32) ([]Task, error) {
-	dueTasks, err := t.queries.GetDueTasks(ctx, limit)
+func (t *TaskRepo) FetchDueTasks(ctx context.Context, limit int) ([]Task, error) {
+	dueTasks, err := t.queries.GetDueTasks(ctx, int32(limit))
 	if err != nil {
 		return nil, err
 	}
 	var tasks []Task
 	for _, task := range dueTasks {
 		tasks = append(tasks, Task{
-			ID:       task.ID.String(),
+			ID:       uuid.UUID(task.ID.Bytes),
 			TaskType: task.TaskType,
 			Payload:  task.Payload,
 		})
@@ -94,7 +121,7 @@ func (t *TaskRepo) MarkTaskAsCompleted(ctx context.Context, taskID uuid.UUID) er
 }
 
 // mark the task as failed and also update the error message
-func (t *TaskRepo) MarkTaskAsFailed(ctx context.Context, taskID uuid.UUID, err error) error {
+func (t *TaskRepo) MarkTaskAsFailed(ctx context.Context, taskID uuid.UUID, taskErr error) error {
 	pgUUID, err := utils.GetPgUUIDFromUUID(taskID)
 	if err != nil {
 		return err
@@ -105,7 +132,7 @@ func (t *TaskRepo) MarkTaskAsFailed(ctx context.Context, taskID uuid.UUID, err e
 			Valid: true,
 		},
 		Error: pgtype.Text{
-			String: err.Error(),
+			String: taskErr.Error(),
 			Valid:  true,
 		},
 		ID: pgUUID,

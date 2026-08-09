@@ -8,7 +8,7 @@ import (
 )
 
 type Task struct {
-	ID           string     `json:"id"`
+	ID           uuid.UUID  `json:"id"`
 	TaskType     string     `json:"task_type"`
 	Payload      []byte     `json:"payload"`
 	Status       string     `json:"status"`
@@ -25,6 +25,7 @@ type Task struct {
 type TaskRepository interface {
 	CreateTask(ctx context.Context, task *Task) (string, error)
 	FetchDueTasks(ctx context.Context, limit int) ([]Task, error)
+	FetchTaskByID(ctx context.Context, taskID uuid.UUID) (*Task, error)
 	MarkTaskAsDispatched(ctx context.Context, taskIDs []uuid.UUID) error
 	MarkTaskAsCompleted(ctx context.Context, taskID uuid.UUID) error
 	MarkTaskAsFailed(ctx context.Context, taskID uuid.UUID, err error) error
@@ -46,6 +47,7 @@ type ScheduleTaskRequest struct {
 
 type ScheduleTaskResponse struct {
 	ID          string `json:"id"`
-	Task        []byte `json:"task"`
+	TaskType    string `json:"task_type"`
+	Payload     []byte `json:"payload"`
 	ScheduledAt string `json:"scheduled_at"`
 }
